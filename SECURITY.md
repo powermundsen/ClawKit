@@ -4,9 +4,8 @@
 
 ClawKit har ingen støttet release ennå. Ikke bruk `main` som produksjonsruntime.
 Releaseworkflowen publiserer først som draft, laster opp alle filer og gjør
-deretter releasen synlig. En repository-variabel sperrer workflowen til GitHub
-release immutability er aktivert. Tagg, assets og attestasjon låses dermed ved
-publisering.
+deretter releasen synlig. Workflowen kontrollerer GitHubs immutable-status
+direkte før bygging. Tagg, assets og attestasjon låses dermed ved publisering.
 
 Sikkerhetsfunn skal rapporteres privat til repoets administrator gjennom en
 allerede etablert kanal. Ikke legg hemmeligheter, sårbarhetsdetaljer eller

@@ -24,10 +24,16 @@ jobs:
           test "${GITHUB_REF_NAME}" = "v${package_version}"
       - name: Require immutable-release gate
         env:
-          IMMUTABLE_RELEASES_ENABLED: ${{ vars.CLAWKIT_IMMUTABLE_RELEASES_ENABLED }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          test "${IMMUTABLE_RELEASES_ENABLED}" = "true" || {
-            echo "Set CLAWKIT_IMMUTABLE_RELEASES_ENABLED=true only after repository release immutability is enabled." >&2
+          enabled="$(
+            gh api \
+              -H 'X-GitHub-Api-Version: 2026-03-10' \
+              "repos/${GITHUB_REPOSITORY}/immutable-releases" \
+              --jq '.enabled'
+          )"
+          test "${enabled}" = "true" || {
+            echo "Enable repository release immutability before tagging." >&2
             exit 1
           }
       - name: Test and scan

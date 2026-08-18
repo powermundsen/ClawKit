@@ -59,8 +59,7 @@ En release krever:
   rollback
 - kontroll av at personlige filer er byte-identiske etter oppgradering
 - secrets- og persondataskann av hele Git-historikken
-- GitHub release immutability aktivert og releasevariabelen
-  `CLAWKIT_IMMUTABLE_RELEASES_ENABLED=true` satt først etter kontroll
+- GitHub release immutability aktivert og verifisert av releaseworkflowen
 - manuell sikkerhets- og personverngjennomgang
 
 Første pilot skal være frivillig og isolert fra andre personlige

@@ -6,13 +6,11 @@ Release. `main` og løse Actions-artifacts er aldri produksjonskilder.
 ## Engangsoppsett på GitHub
 
 1. Aktiver **Settings → Releases → Enable release immutability**.
-2. Sett Actions-variabelen `CLAWKIT_IMMUTABLE_RELEASES_ENABLED=true` først
-   etter at innstillingen er kontrollert.
-3. Publiser bare den rene, skannede ClawKit-historikken. Personlig
+2. Publiser bare den rene, skannede ClawKit-historikken. Personlig
    kildehistorikk skal forbli i et separat privat arkiv.
 
-Releaseworkflowen feiler lukket dersom variabelen mangler. Variabelen er en
-operasjonell sperre, ikke en erstatning for GitHub-innstillingen.
+Releaseworkflowen spør GitHubs repository-endepunkt direkte og feiler lukket
+dersom release immutability ikke faktisk er aktivert.
 
 ## Kandidatport
 
