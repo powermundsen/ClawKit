@@ -33,6 +33,7 @@ class MessageJob:
     response_success: bool = False
     response_error_category: str = ""
     next_chunk: int = 0
+    next_artifact: int = 0
     attempts: int = 0
     retry_at: float = 0.0
 
@@ -57,6 +58,15 @@ class PersistentJobStore:
             if job.retry_at <= current:
                 jobs.append(job)
         return jobs
+
+    def list_all(self) -> list[MessageJob]:
+        """Load all persisted jobs, including deferred retries."""
+
+        if not self.directory.exists():
+            return []
+        if not self.directory.is_absolute() or self.directory.is_symlink():
+            raise JobStoreError("Telegram job directory is unsafe")
+        return [self._load_path(path) for path in sorted(self.directory.glob("*.json"))]
 
     def get(self, update_id: int) -> MessageJob | None:
         path = self._path(update_id)
@@ -83,6 +93,7 @@ class PersistentJobStore:
             response_success=response.success,
             response_error_category=response.error_category,
             next_chunk=0,
+            next_artifact=0,
             attempts=0,
             retry_at=0.0,
         )
@@ -92,6 +103,12 @@ class PersistentJobStore:
     def advance_chunk(self, update_id: int, next_chunk: int) -> MessageJob:
         current = self._required(update_id)
         updated = replace(current, next_chunk=next_chunk)
+        self._write(updated)
+        return updated
+
+    def advance_artifact(self, update_id: int, next_artifact: int) -> MessageJob:
+        current = self._required(update_id)
+        updated = replace(current, next_artifact=next_artifact)
         self._write(updated)
         return updated
 
@@ -186,6 +203,7 @@ class PersistentJobStore:
                 response_success=data.get("response_success", False),
                 response_error_category=data.get("response_error_category", ""),
                 next_chunk=data.get("next_chunk", 0),
+                next_artifact=data.get("next_artifact", 0),
                 attempts=data.get("attempts", 0),
                 retry_at=data.get("retry_at", 0.0),
             )
@@ -218,6 +236,9 @@ class PersistentJobStore:
             or isinstance(job.next_chunk, bool)
             or not isinstance(job.next_chunk, int)
             or job.next_chunk < 0
+            or isinstance(job.next_artifact, bool)
+            or not isinstance(job.next_artifact, int)
+            or job.next_artifact < 0
             or isinstance(job.attempts, bool)
             or not isinstance(job.attempts, int)
             or job.attempts < 0

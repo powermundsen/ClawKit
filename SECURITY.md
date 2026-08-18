@@ -51,8 +51,17 @@ hemmelighetsfelter før output.
   agent.
 - Bot-token skal ikke brukes i URL-er som logges.
 - Vedlegg lagres privat og får en dokumentert retention-policy.
+- Vedleggsnavn genereres lokalt, størrelse begrenses før lagring, og lokale
+  hjelpeprogrammer startes uten shell og uten ClawKit-secrets i prosessmiljøet.
+- SVG sendes bare som dokument etter konservativ XML-kontroll som avviser
+  script, event handlers, aktive referanser og eksterne ressurser.
 - Brukerrettede feil skal sanitiseres. Rå traceback og prosessoutput hører bare
   hjemme i lokal, tilgangsbegrenset diagnostikk.
+
+Lokale transkriberere, Mermaid-renderere og connectorer kjører som
+runtimebrukeren. De må derfor være betrodde, absolutte executable-filer og er
+ikke en sandboxgrense. Connectorgrensesnittet tilbyr ikke skrive- eller
+kontrollhandlinger.
 
 ## Agenthandlinger og godkjenning
 

@@ -9,6 +9,7 @@ from pathlib import Path
 from clawkit.auth import authentication_status
 from clawkit.bridge.telegram_client import TelegramClient, TelegramError
 from clawkit.config import ConfigurationError, load_runtime_settings
+from clawkit.features import FeatureSet
 from clawkit.instance import InstanceConfigurationError, load_instance
 from clawkit.module_system import ModuleManager
 from clawkit.paths import ClawKitPaths
@@ -95,13 +96,23 @@ def run_health_checks(
     checks.append(HealthCheck("configuration", config_ok, config_detail))
     if runtime is not None and instance_ok:
         try:
+            features = FeatureSet(paths, runtime)
+            checks.append(
+                HealthCheck(
+                    "features",
+                    True,
+                    ", ".join(features.enabled_names) or "none enabled",
+                )
+            )
             manager = ModuleManager(paths, runtime, instance)
             checks.extend(
                 HealthCheck(check.name, check.ok, check.detail)
                 for check in manager.health()
             )
         except (ConfigurationError, OSError, ValueError):
-            checks.append(HealthCheck("modules", False, "invalid or unsafe"))
+            checks.append(
+                HealthCheck("features_or_modules", False, "invalid or unsafe")
+            )
 
     provider_states = [
         authentication_status(paths, "claude"),

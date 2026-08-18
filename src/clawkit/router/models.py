@@ -32,3 +32,6 @@ class RouterState:
     codex_session_id: str = ""
     last_agent: str = ""
     last_error_category: str = ""
+    claude_model: str = ""
+    codex_model: str = ""
+    codex_reasoning_effort: str = ""

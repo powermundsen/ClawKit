@@ -127,9 +127,13 @@ Runtimekonfigurasjon valideres før bridge starter.
 6. Router velger Claude eller Codex og injiserer en begrenset allowlist av
    profil, åpne tråder, minne og påminnelser.
 7. Responsen lagres før sending, deles i Telegram-kompatible biter og fortsetter
-   fra neste usendte bit ved sendefeil.
+   fra neste usendte tekstbit eller visualiseringsartefakt ved sendefeil.
 8. Et gjentatt typing-signal viser aktivitet under lange agentkall.
 9. Operasjonell metadata logges lokalt uten meldingstekst.
+
+Private vedlegg, lokal transkribering, inline visualiseringer og redigert
+progressmelding ligger bak uavhengige feature-flagg. De inngår ikke i flyten
+eller dataområdet før de er eksplisitt aktivert i `CLAWKIT_FEATURES`.
 
 ## Oppgraderingsgrense
 
@@ -163,11 +167,28 @@ Moduler er av som standard og aktiveres i `CLAWKIT_MODULES`.
 Første referansemodul er `local-health`. Den streamer utvalgte treningsevents
 fra en Apple Health XML-eksport til en privat SQLite-database, og genererer et
 begrenset Markdown-/JSON-sammendrag. Bare Markdown-sammendraget injiseres i
-agentkonteksten. Rå XML og SQLite sendes ikke til agenten. Splunk, kalender,
-smarthjem og morgenbrief er ikke del av kjernen.
+agentkonteksten. Rå XML og SQLite sendes ikke til agenten.
+
+Kalender, morgenbrief, observability og smarthjem har generiske,
+leverandøruavhengige connectorplasser i samme register. De inneholder ingen
+backend eller credentials. En aktiv connector kan bare levere begrenset
+kontekst, health og eksplisitt aktivert varsling gjennom én lokal executable.
+Skriving og kontrollhandlinger er utenfor kontrakten.
 
 En modul skal ikke kunne lese en annen moduls credential eller data med mindre
 det er en dokumentert, eksplisitt konfigurert kobling.
+
+## Features
+
+Features endrer bridge-, router- eller kontekstadferd uten å representere en
+egen datakilde. Det sentrale registeret deklarerer navn, avhengigheter og
+obligatorisk konfigurasjon. Ukjente navn, duplikater og manglende avhengigheter
+avvises før bridgen starter. Innstillinger for en avslått feature tolkes ikke.
+
+Nye runtimefunksjoner skal legges til i registeret og bak én avgrenset
+implementasjon, med health, test, dataflyt og avskrudd standard. Se
+[`features.md`](features.md). Datakilder og planlagte integrasjoner skal bruke
+modulregisteret og kontrakten i [`connectors.md`](connectors.md).
 
 ## Referanseplattform
 

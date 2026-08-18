@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Protocol
 
 from clawkit.audit import AuditLogger
+from clawkit.bridge.attachments import AttachmentError, AttachmentProcessor
 from clawkit.bridge.job_store import (
     JobStoreError,
     MessageJob,
@@ -24,6 +25,7 @@ from clawkit.bridge.telegram_format import (
     chunk_markdown,
     markdown_to_telegram_html,
 )
+from clawkit.bridge.visualizations import VisualizationRenderer
 from clawkit.paths import ensure_private_directories
 from clawkit.router.models import AgentResponse
 
@@ -109,6 +111,10 @@ class TelegramBridge:
         ] | None = None,
         scheduled_delivered: Callable[[str], None] | None = None,
         scheduler_interval_seconds: float = 300.0,
+        attachment_processor: AttachmentProcessor | None = None,
+        visualization_renderer: VisualizationRenderer | None = None,
+        live_progress: bool = False,
+        progress_interval_seconds: float = 45.0,
     ) -> None:
         if allowed_chat_id == 0:
             raise ValueError("allowed_chat_id is required")
@@ -127,6 +133,12 @@ class TelegramBridge:
         self.scheduled_notifications = scheduled_notifications
         self.scheduled_delivered = scheduled_delivered
         self.scheduler_interval_seconds = scheduler_interval_seconds
+        self.attachment_processor = attachment_processor
+        self.visualization_renderer = visualization_renderer
+        self.live_progress = live_progress
+        if progress_interval_seconds < 10 or progress_interval_seconds > 300:
+            raise ValueError("progress interval must be between 10 and 300 seconds")
+        self.progress_interval_seconds = progress_interval_seconds
         self.jobs: queue.Queue[MessageJob] = queue.Queue(maxsize=queue_size)
         self._queued_ids: set[int] = set()
         self._queue_lock = threading.Lock()
@@ -199,8 +211,38 @@ class TelegramBridge:
                 reason_code="chat_not_allowlisted",
             )
             return True
-        text = message.get("text")
-        if not isinstance(text, str) or not text.strip():
+        raw_update_id = update.get("update_id")
+        if isinstance(raw_update_id, bool) or not isinstance(raw_update_id, int):
+            self._local_update_id += 1
+            update_id = self._local_update_id
+        else:
+            update_id = raw_update_id
+        attachment_count = 0
+        if self.attachment_processor is not None:
+            try:
+                inbound = self.attachment_processor.process(update_id, message)
+                text = inbound.text
+                attachment_count = inbound.attachment_count
+            except AttachmentError as exc:
+                self.attachment_processor.cleanup_job(update_id)
+                self.audit.emit(
+                    "telegram",
+                    "attachment_failed",
+                    error_category=exc.category,
+                    success=False,
+                )
+                self._send_plain(
+                    chat_id,
+                    self._text(
+                        "Vedlegget kunne ikke behandles lokalt.",
+                        "The attachment could not be processed locally.",
+                    ),
+                )
+                return True
+        else:
+            raw_text = message.get("text")
+            text = raw_text if isinstance(raw_text, str) else ""
+        if not text.strip():
             self._send_plain(
                 chat_id,
                 self._text(
@@ -235,12 +277,6 @@ class TelegramBridge:
                 ),
             )
             return True
-        raw_update_id = update.get("update_id")
-        if isinstance(raw_update_id, bool) or not isinstance(raw_update_id, int):
-            self._local_update_id += 1
-            update_id = self._local_update_id
-        else:
-            update_id = raw_update_id
         job = MessageJob(
             update_id=update_id,
             chat_id=chat_id,
@@ -251,6 +287,7 @@ class TelegramBridge:
             job = self.job_store.get(update_id) or job
         queued = self._enqueue(job)
         if not queued and self.job_store is None:
+            self._cleanup_job(update_id)
             self._send_plain(
                 chat_id,
                 self._text(
@@ -263,6 +300,7 @@ class TelegramBridge:
             "telegram",
             "message_queued",
             queue_depth=self.jobs.qsize(),
+            attachment_count=attachment_count,
             success=True,
         )
         return True
@@ -294,6 +332,7 @@ class TelegramBridge:
             delivered = True
             if self.job_store is not None:
                 self.job_store.delete(job.update_id)
+            self._cleanup_job(job.update_id)
             self.audit.emit(
                 "telegram",
                 "response_sent",
@@ -313,6 +352,11 @@ class TelegramBridge:
                 success=False,
             )
         except (JobStoreError, OSError, ValueError):
+            if self.job_store is not None:
+                try:
+                    self.job_store.defer(job.update_id)
+                except JobStoreError:
+                    pass
             self.audit.emit(
                 "telegram",
                 "worker_failed",
@@ -342,6 +386,25 @@ class TelegramBridge:
             daemon=True,
         )
         pulse.start()
+        progress_stop = threading.Event()
+        progress_id = 0
+        progress: threading.Thread | None = None
+        if self.live_progress:
+            try:
+                progress_id = self.client.send_message(
+                    job.chat_id,
+                    self._text("Tenker…", "Thinking…"),
+                )
+            except TelegramError:
+                progress_id = 0
+            if progress_id:
+                progress = threading.Thread(
+                    target=self._progress_pulse,
+                    args=(job.chat_id, progress_id, progress_stop),
+                    name="clawkit-progress-pulse",
+                    daemon=True,
+                )
+                progress.start()
         try:
             try:
                 return self.router.route(
@@ -367,6 +430,14 @@ class TelegramBridge:
         finally:
             pulse_stop.set()
             pulse.join(timeout=1)
+            progress_stop.set()
+            if progress is not None:
+                progress.join(timeout=1)
+            if progress_id:
+                try:
+                    self.client.delete_message(job.chat_id, progress_id)
+                except TelegramError:
+                    pass
 
     def _typing_pulse(
         self,
@@ -381,6 +452,24 @@ class TelegramBridge:
             if pulse_stop.wait(self.typing_interval_seconds):
                 break
 
+    def _progress_pulse(
+        self,
+        chat_id: int,
+        message_id: int,
+        progress_stop: threading.Event,
+    ) -> None:
+        started = time.monotonic()
+        while not progress_stop.wait(self.progress_interval_seconds):
+            elapsed = max(int(time.monotonic() - started), 1)
+            text = self._text(
+                f"Jobber fortsatt, {elapsed} sekunder…",
+                f"Still working, {elapsed} seconds…",
+            )
+            try:
+                self.client.edit_message(chat_id, message_id, text)
+            except TelegramError:
+                return
+
     def _deliver_job(
         self,
         job: MessageJob,
@@ -390,6 +479,17 @@ class TelegramBridge:
             "Agenten returnerte ikke noe svar.",
             "The agent returned no response.",
         )
+        artifacts = ()
+        if self.visualization_renderer is not None:
+            rendered = self.visualization_renderer.render(job.update_id, safe_text)
+            safe_text = rendered.text
+            artifacts = rendered.artifacts
+        if job.next_artifact > len(artifacts):
+            raise JobStoreError("Telegram artifact position is invalid")
+        for index in range(job.next_artifact, len(artifacts)):
+            self.client.send_document(job.chat_id, artifacts[index])
+            if self.job_store is not None:
+                self.job_store.advance_artifact(job.update_id, index + 1)
         chunks = chunk_markdown(safe_text)
         if job.next_chunk > len(chunks):
             raise JobStoreError("Telegram outbox position is invalid")
@@ -542,9 +642,13 @@ class TelegramBridge:
                     self._queued_ids.discard(job.update_id)
                 if self.job_store is not None:
                     self.job_store.delete(job.update_id)
+                self._cleanup_job(job.update_id)
                 cleared_ids.add(job.update_id)
             except queue.Empty:
                 break
+        persisted_jobs = self.job_store.list_all() if self.job_store is not None else []
+        for job in persisted_jobs:
+            self._cleanup_job(job.update_id)
         persisted = self.job_store.clear_all() if self.job_store is not None else 0
         self.audit.emit(
             "telegram",
@@ -552,6 +656,12 @@ class TelegramBridge:
             queue_depth=len(cleared_ids) + persisted,
             success=True,
         )
+
+    def _cleanup_job(self, update_id: int) -> None:
+        if self.attachment_processor is not None:
+            self.attachment_processor.cleanup_job(update_id)
+        if self.visualization_renderer is not None:
+            self.visualization_renderer.cleanup_job(update_id)
 
     def _send_markdown(self, chat_id: int, text: str) -> None:
         safe_text = text.strip() or self._text(

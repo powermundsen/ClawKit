@@ -43,6 +43,11 @@ class RouterStateStore:
             last_error_category=self._safe_category(
                 data.get("last_error_category")
             ),
+            claude_model=self._safe_model(data.get("claude_model")),
+            codex_model=self._safe_model(data.get("codex_model")),
+            codex_reasoning_effort=self._safe_reasoning(
+                data.get("codex_reasoning_effort")
+            ),
         )
 
     def save(self, state: RouterState) -> None:
@@ -56,6 +61,11 @@ class RouterStateStore:
             "last_agent": self._safe_agent(state.last_agent),
             "last_error_category": self._safe_category(
                 state.last_error_category
+            ),
+            "claude_model": self._safe_model(state.claude_model),
+            "codex_model": self._safe_model(state.codex_model),
+            "codex_reasoning_effort": self._safe_reasoning(
+                state.codex_reasoning_effort
             ),
         }
         descriptor, temporary = tempfile.mkstemp(
@@ -106,4 +116,18 @@ class RouterStateStore:
             character.isalnum() or character in "-_." for character in text
         ):
             raise RouterStateError("invalid error category")
+        return text
+
+    @staticmethod
+    def _safe_model(value: object) -> str:
+        text = str(value or "")
+        if len(text) > 120 or any(ord(character) < 32 for character in text):
+            raise RouterStateError("invalid model identifier")
+        return text
+
+    @staticmethod
+    def _safe_reasoning(value: object) -> str:
+        text = str(value or "").lower()
+        if text not in {"", "minimal", "low", "medium", "high", "xhigh"}:
+            raise RouterStateError("invalid reasoning effort")
         return text

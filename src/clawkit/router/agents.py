@@ -122,6 +122,12 @@ class ClaudeAdapter:
         self.allowed_tools = tuple(allowed_tools)
         claude_allowed_tools(self.allowed_tools)
 
+    def set_model(self, model: str) -> None:
+        value = model.strip()
+        if len(value) > 120 or any(ord(character) < 32 for character in value):
+            raise ValueError("invalid Claude model identifier")
+        self.model = value
+
     def call(
         self,
         message: str,
@@ -246,6 +252,18 @@ class CodexAdapter:
         # the bridge at startup instead of on the first owner message.
         self.sandbox = sandbox
         codex_sandbox(self.sandbox)
+
+    def set_model(self, model: str) -> None:
+        value = model.strip()
+        if len(value) > 120 or any(ord(character) < 32 for character in value):
+            raise ValueError("invalid Codex model identifier")
+        self.model = value
+
+    def set_reasoning_effort(self, effort: str) -> None:
+        value = effort.strip().lower()
+        if value not in {"minimal", "low", "medium", "high", "xhigh"}:
+            raise ValueError("invalid Codex reasoning effort")
+        self.reasoning_effort = value
 
     def call(
         self,

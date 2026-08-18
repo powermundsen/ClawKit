@@ -45,6 +45,17 @@ lokale. ClawKit genererer et begrenset treningssammendrag. Dette sammendraget
 sendes til valgt agentleverandør når agenten svarer, på samme måte som øvrig
 eksplisitt instanskontekst. Rådatabase, eksportfil og import-ID sendes ikke.
 
+Når `attachments` aktiveres, lastes et allowlistet Telegram-vedlegg ned til
+privat runtime-state etter chatkontrollen. Originalt filnavn erstattes med et
+generert navn. Filen kan sendes til valgt agent som lokal filsti og slettes
+etter levert svar eller kansellering. Ved krasj beholdes den bare sammen med
+den vedvarende jobben frem til retry eller eksplisitt køtømming.
+
+`local-transcription` sender lyd til en betrodd lokal executable og injiserer
+bare transkripsjonen til agenten. `inline-visualizations` lagrer genererte SVG-
+eller Mermaid-filer i samme midlertidige stateområde og sletter dem etter
+levering. Ingen av funksjonene er aktive som standard.
+
 ## Lokal lagring
 
 Den portable installasjonen samler alle ClawKit-data under katalogen brukeren

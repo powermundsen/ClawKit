@@ -11,6 +11,19 @@ kompatibilitetsbrudd. `release-manifest.json` er den maskinlesbare kontrakten.
 
 ### Added
 
+- Avskrudd feature-register med deklarerte avhengigheter og påkrevde
+  innstillinger. Ukjente eller ufullstendige featurevalg stopper ved oppstart.
+- Valgfrie private Telegram-vedlegg med størrelsesgrense, genererte filnavn,
+  krasjtrygg levetid og opprydding etter svar eller kansellering.
+- Valgfri lokal tale-/lydtranskribering gjennom én eksplisitt executable som
+  kjøres uten shell og uten ClawKit-secrets i miljøet.
+- Valgfri uttrekking av sikre SVG- og Mermaid-blokker til Telegram-dokumenter,
+  med valgfri lokal Mermaid-renderer og retryposisjon per artefakt.
+- Valgfri levende Telegram-progress, utvidede modell-/reasoningkommandoer,
+  ikke-utførende `/rollback`-plan, autonomikontekst og in-memory circuit breaker.
+- Registerbaserte, avskrudd lokale connectorer for kalender, morgenbrief,
+  observability og smarthjem. Den felles kontrakten gir bare kontekst, health
+  og eksplisitt aktivert varsling, ikke kontrollhandlinger.
 - Telegram-kommandoen `/stop` avbryter aktiv providerprosess, tømmer både
   minne- og diskkøen og lukker Claude- og Codex-sesjonene uten resume.
 - Egen kapabilitetsgrense (`router/capabilities.py`) for provideragentene:
@@ -47,6 +60,11 @@ kompatibilitetsbrudd. `release-manifest.json` er den maskinlesbare kontrakten.
 
 ### Changed
 
+- Modulopprettelse bruker nå et sentralt factoryregister i stedet for en
+  hardkodet navnesjekk, slik at nye integrasjoner får samme aktiverings- og
+  health-grense.
+- Setup oppretter en inaktiv `AUTONOMY.md`-mal og alle valgfrie
+  konfigurasjonsfelt med tom eller avskrudd standard.
 - Lokal JSONL-audit roteres ved 5 MiB og beholder fem private segmenter.
 - Supportpakker krever en ny absolutt fil i en eksisterende katalog og endrer
   aldri rettighetene på katalogen brukeren valgte.
@@ -66,6 +84,11 @@ kompatibilitetsbrudd. `release-manifest.json` er den maskinlesbare kontrakten.
 
 ### Privacy
 
+- Innkommende vedlegg og genererte visualiseringer lagres bare i privat
+  runtime-state og slettes etter fullført levering eller kansellering. Lokale
+  hjelpeprosesser arver ikke bot-token, GitHub-token eller agentcredentials.
+- Connectorer er lokale executables og får ingen secrets gjennom prosessmiljøet.
+  Connectorens begrensede kontekst sendes bare til agent når modulen er aktiv.
 - Helseeksport, SQLite, sammendrag og modulstate ligger utenfor Git og
   releasebackup. Bare det begrensede Markdown-sammendraget kan injiseres i
   agentkonteksten etter eksplisitt modulaktivering.
@@ -73,8 +96,9 @@ kompatibilitetsbrudd. `release-manifest.json` er den maskinlesbare kontrakten.
 
 ### Migration
 
-- Ingen migreringer. `local-health` er av som standard og oppretter først
-  state etter eksplisitt aktivering og bruk.
+- Ingen automatiske migreringer. Eksisterende runtime får ikke nye features
+  eller moduler før eieren legger dem til i `runtime.env`. Nye instanser får en
+  inaktiv `AUTONOMY.md`-mal.
 
 ## [0.2.0] - 2026-07-28
 

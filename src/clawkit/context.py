@@ -54,6 +54,7 @@ def build_instance_context(
     *,
     timezone: str,
     now: Callable[[], datetime] | None = None,
+    extra_files: tuple[tuple[str, Path], ...] = (),
 ) -> str:
     """Read the small, known set of files needed for conversational continuity."""
 
@@ -68,6 +69,7 @@ def build_instance_context(
         ("Open threads", paths.instance_dir / "memory" / "open-threads.md"),
         ("Reminders", paths.instance_dir / "reminders.md"),
         ("Today's work log", paths.instance_dir / "memory" / f"{day}.md"),
+        *extra_files,
     )
     sections: list[str] = []
     remaining = MAX_CONTEXT_CHARS

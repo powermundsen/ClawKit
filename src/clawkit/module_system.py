@@ -41,7 +41,74 @@ class ClawKitModule(Protocol):
     def mark_notification_sent(self, key: str) -> None: ...
 
 
-def parse_enabled_modules(value: str) -> tuple[str, ...]:
+ModuleFactory = Callable[
+    [ClawKitPaths, RuntimeSettings, InstanceSettings],
+    ClawKitModule,
+]
+
+
+class ModuleRegistry:
+    """Registry boundary for disabled-by-default integration modules."""
+
+    def __init__(self) -> None:
+        self._factories: dict[str, ModuleFactory] = {}
+
+    def register(self, name: str, factory: ModuleFactory) -> None:
+        if not _MODULE_RE.fullmatch(name):
+            raise ValueError("invalid module name")
+        if name in self._factories:
+            raise ValueError(f"duplicate module: {name}")
+        self._factories[name] = factory
+
+    def create(
+        self,
+        name: str,
+        paths: ClawKitPaths,
+        runtime: RuntimeSettings,
+        instance: InstanceSettings,
+    ) -> ClawKitModule:
+        try:
+            factory = self._factories[name]
+        except KeyError:
+            raise ConfigurationError(f"unknown ClawKit module: {name}") from None
+        return factory(paths, runtime, instance)
+
+    @property
+    def names(self) -> tuple[str, ...]:
+        return tuple(sorted(self._factories))
+
+
+def _local_health_factory(
+    paths: ClawKitPaths,
+    runtime: RuntimeSettings,
+    instance: InstanceSettings,
+) -> ClawKitModule:
+    del runtime
+    from clawkit.modules.local_health import LocalHealthModule
+
+    return LocalHealthModule(paths, instance)
+
+
+def builtin_module_registry() -> ModuleRegistry:
+    registry = ModuleRegistry()
+    registry.register("local-health", _local_health_factory)
+    from clawkit.modules.command_connector import connector_factory
+
+    for name, setting in (
+        ("calendar", "CLAWKIT_CALENDAR_COMMAND"),
+        ("morning-brief", "CLAWKIT_MORNING_BRIEF_COMMAND"),
+        ("observability", "CLAWKIT_OBSERVABILITY_COMMAND"),
+        ("smart-home", "CLAWKIT_SMART_HOME_COMMAND"),
+    ):
+        registry.register(name, connector_factory(name, setting))
+    return registry
+
+
+def parse_enabled_modules(
+    value: str,
+    *,
+    registry: ModuleRegistry | None = None,
+) -> tuple[str, ...]:
     if not value.strip():
         return ()
     names = tuple(part.strip() for part in value.split(",") if part.strip())
@@ -49,7 +116,8 @@ def parse_enabled_modules(value: str) -> tuple[str, ...]:
         raise ConfigurationError("CLAWKIT_MODULES contains an invalid module name")
     if len(set(names)) != len(names):
         raise ConfigurationError("CLAWKIT_MODULES contains duplicates")
-    unknown = sorted(set(names) - {"local-health"})
+    catalog = registry or builtin_module_registry()
+    unknown = sorted(set(names) - set(catalog.names))
     if unknown:
         raise ConfigurationError(f"unknown ClawKit modules: {', '.join(unknown)}")
     return names
@@ -63,18 +131,21 @@ class ModuleManager:
         instance: InstanceSettings,
         *,
         now: Callable[[], datetime] | None = None,
+        registry: ModuleRegistry | None = None,
     ) -> None:
         self.paths = paths
         self.runtime = runtime
         self.instance = instance
         self.now = now or (lambda: datetime.now(timezone.utc))
-        self.enabled_names = parse_enabled_modules(runtime.get("CLAWKIT_MODULES"))
-        self.modules: list[ClawKitModule] = []
-        for name in self.enabled_names:
-            if name == "local-health":
-                from clawkit.modules.local_health import LocalHealthModule
-
-                self.modules.append(LocalHealthModule(paths, instance))
+        self.registry = registry or builtin_module_registry()
+        self.enabled_names = parse_enabled_modules(
+            runtime.get("CLAWKIT_MODULES"),
+            registry=self.registry,
+        )
+        self.modules = [
+            self.registry.create(name, paths, runtime, instance)
+            for name in self.enabled_names
+        ]
 
     def context(self) -> str:
         sections: list[str] = []

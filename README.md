@@ -1,6 +1,6 @@
 # ClawKit
 
-ClawKit er et privat, gjenbrukbart byggesett for personlige assistenter basert
+ClawKit er et gjenbrukbart byggesett for personlige assistenter basert
 på Claude Code og Codex CLI. Plattformen leverer den delte koden. Hver bruker
 eier sin egen persona, konfigurasjon, hukommelse, samtalehistorikk og
 hemmeligheter lokalt.
@@ -51,7 +51,7 @@ ikke Apple Silicon, lokal modell eller GPU.
 Installeren krever:
 
 - macOS eller Linux med `curl`, `tar` og minst 1,5 GiB ledig plass
-- tilgang til det private ClawKit-repoet eller en versjonert installasjonspakke
+- tilgang til ClawKit-kilden eller en versjonert installasjonspakke
 - Claude- og ChatGPT-abonnement for de agentene brukeren vil aktivere
 - LaunchAgent på macOS eller systemd-brukertjeneste på Linux
 - Telegram som eneste påkrevde chatmodul
@@ -93,11 +93,17 @@ tjenestehåndtering og rollback er testet der.
 - valgfri `local-health`-modul med privat SQLite, streamingimport av Apple
   Health XML og lokale Markdown-/JSON-sammendrag
 - `training-analysis`-skill som analyserer sammendraget, aldri rådatabasen
+- sentralt, avskrudd feature-register for private Telegram-vedlegg, lokal
+  transkribering, inline SVG/Mermaid, levende progressmelding, utvidede
+  kommandoer, autonomikontekst og circuit breaker
+- avskrudd connectorregister for kalender, morgenbrief, observability og
+  smarthjem via én sanitert lokal kommandokontrakt
 - GitHub Actions for macOS/Linux CI og draft-før-publisering av immutable
   releasefiler
 
-Kalender, morgenbrief, smarthjem og ekstern observability er senere, valgfrie
-moduler. Alle moduler, også `local-health`, er av som standard.
+Alle nye features og moduler, også `local-health` og connectorplassene, er av
+som standard. Connectorene er klare for en lokal backend, men inneholder ingen
+private endepunkter, credentials eller leverandørspesifikk konfigurasjon.
 
 ## Personvern og sikkerhet
 
@@ -134,6 +140,8 @@ bakgrunnstjeneste. Se:
 - [Installasjon](docs/installation.md)
 - [Oppgradering og rollback](docs/upgrading.md)
 - [Lokal helse og treningsanalyse](docs/local-health.md)
+- [Valgfrie runtimefunksjoner](docs/features.md)
+- [Valgfrie lokale connectorer](docs/connectors.md)
 - [Releaseprosess](docs/releasing.md)
 
 Ikke bruk utviklingskandidaten som produksjonsinstallasjon før den isolerte

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+import tempfile
 import unittest
 import urllib.error
+from pathlib import Path
 from typing import Any
 
 from clawkit.bridge.telegram_client import TelegramClient, TelegramError
@@ -58,6 +60,86 @@ class TestTelegramClient(unittest.TestCase):
         client = TelegramClient(TOKEN, transport=RecordingTransport({"ok": True}))
         with self.assertRaises(ValueError):
             client.call("../getMe")
+
+    def test_file_download_is_bounded(self) -> None:
+        class FileTransport:
+            def __call__(self, request: Any, timeout: float) -> bytes:
+                del timeout
+                if request.full_url.endswith("/getFile"):
+                    return json.dumps(
+                        {
+                            "ok": True,
+                            "result": {
+                                "file_path": "voice/example.ogg",
+                                "file_size": 3,
+                            },
+                        }
+                    ).encode()
+                return b"abc"
+
+        client = TelegramClient(TOKEN, transport=FileTransport())
+        path, size = client.get_file("example_file_id_123")
+
+        self.assertEqual((path, size), ("voice/example.ogg", 3))
+        self.assertEqual(client.download_file(path, maximum_bytes=3), b"abc")
+        with self.assertRaises(TelegramError):
+            client.download_file(path, maximum_bytes=2)
+
+    def test_invalid_file_size_is_a_sanitized_telegram_error(self) -> None:
+        def transport(request: Any, timeout: float) -> bytes:
+            del request, timeout
+            return json.dumps(
+                {
+                    "ok": True,
+                    "result": {
+                        "file_path": "voice/example.ogg",
+                        "file_size": "not-a-number",
+                    },
+                }
+            ).encode()
+
+        client = TelegramClient(TOKEN, transport=transport)
+        with self.assertRaises(TelegramError) as raised:
+            client.get_file("example_file_id_123")
+        self.assertEqual(raised.exception.category, "invalid_response")
+
+    def test_send_document_uses_multipart_without_token_in_body(self) -> None:
+        class MultipartTransport:
+            def __init__(self) -> None:
+                self.body = b""
+                self.content_type = ""
+
+            def __call__(self, request: Any, timeout: float) -> bytes:
+                del timeout
+                self.body = request.data
+                self.content_type = request.headers["Content-type"]
+                return json.dumps(
+                    {"ok": True, "result": {"message_id": 42}}
+                ).encode()
+
+        with tempfile.TemporaryDirectory() as temp:
+            document = Path(temp) / "diagram.svg"
+            document.write_text("<svg/>", encoding="utf-8")
+            transport = MultipartTransport()
+            client = TelegramClient(TOKEN, transport=transport)
+
+            message_id = client.send_document(1001, document)
+
+        self.assertEqual(message_id, 42)
+        self.assertIn("multipart/form-data", transport.content_type)
+        self.assertIn(b"<svg/>", transport.body)
+        self.assertNotIn(TOKEN.encode(), transport.body)
+
+    def test_send_document_rejects_symlinks(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            document = Path(temp) / "diagram.svg"
+            document.write_text("<svg/>", encoding="utf-8")
+            link = Path(temp) / "linked.svg"
+            link.symlink_to(document)
+            client = TelegramClient(TOKEN, transport=lambda request, timeout: b"")
+
+            with self.assertRaises(ValueError):
+                client.send_document(1001, link)
 
 
 if __name__ == "__main__":

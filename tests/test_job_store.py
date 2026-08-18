@@ -31,9 +31,11 @@ class TestPersistentJobStore(unittest.TestCase):
         )
         self.assertTrue(saved.response_ready)
         self.store.advance_chunk(42, 1)
+        self.store.advance_artifact(42, 1)
         loaded = self.store.get(42)
         self.assertIsNotNone(loaded)
         self.assertEqual(loaded.next_chunk, 1)
+        self.assertEqual(loaded.next_artifact, 1)
         path = self.directory / "00000000000000000042.json"
         self.assertEqual(path.stat().st_mode & 0o777, 0o600)
 

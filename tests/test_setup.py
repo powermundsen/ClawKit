@@ -53,6 +53,9 @@ class TestSetup(unittest.TestCase):
         self.assertEqual(created_again, [])
         self.assertEqual(memory.read_text(encoding="utf-8"), "# My memory\n")
         self.assertEqual(load_instance(self.paths.instance_dir / "instance.yaml"), self.settings)
+        self.assertTrue((self.paths.instance_dir / "AUTONOMY.md").is_file())
+        runtime = self.paths.runtime_config_file.read_text(encoding="utf-8")
+        self.assertIn("CLAWKIT_FEATURES=", runtime)
         self.assertEqual(
             stat.S_IMODE((self.paths.instance_dir / "AGENTS.md").stat().st_mode),
             0o600,

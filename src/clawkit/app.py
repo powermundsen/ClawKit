@@ -5,11 +5,14 @@ from __future__ import annotations
 from clawkit import __version__
 from clawkit.auth import authentication_status
 from clawkit.audit import AuditLogger
+from clawkit.bridge.attachments import AttachmentProcessor
 from clawkit.bridge.job_store import PersistentJobStore
 from clawkit.bridge.runtime import OffsetStore, TelegramBridge
 from clawkit.bridge.telegram_client import TelegramClient
+from clawkit.bridge.visualizations import VisualizationRenderer
 from clawkit.config import ConfigurationError, load_runtime_settings
 from clawkit.context import build_instance_context
+from clawkit.features import FeatureSet, parse_model_aliases
 from clawkit.instance import load_instance
 from clawkit.module_system import ModuleManager
 from clawkit.onboarding import OnboardingRouter, OnboardingStore
@@ -34,6 +37,27 @@ def _positive_int(value: str, *, name: str, default: int) -> int:
     return parsed
 
 
+def _bounded_int(
+    value: str,
+    *,
+    name: str,
+    default: int,
+    minimum: int,
+    maximum: int,
+) -> int:
+    if not value:
+        return default
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise ConfigurationError(f"{name} must be an integer") from exc
+    if parsed < minimum or parsed > maximum:
+        raise ConfigurationError(
+            f"{name} must be between {minimum} and {maximum}"
+        )
+    return parsed
+
+
 def build_bridge(paths: ClawKitPaths) -> TelegramBridge:
     sync_skill_discovery(paths)
     instance = load_instance(paths.instance_dir / "instance.yaml")
@@ -53,7 +77,33 @@ def build_bridge(paths: ClawKitPaths) -> TelegramBridge:
         default=900,
     )
     audit = AuditLogger(paths.audit_log_file)
+    features = FeatureSet(paths, runtime)
     modules = ModuleManager(paths, runtime, instance)
+    extended_commands = features.enabled("extended-commands")
+    claude_model_aliases = (
+        parse_model_aliases(
+            runtime.get("CLAWKIT_CLAUDE_MODEL_ALIASES"),
+            setting="CLAWKIT_CLAUDE_MODEL_ALIASES",
+        )
+        if extended_commands
+        else {}
+    )
+    codex_model_aliases = (
+        parse_model_aliases(
+            runtime.get("CLAWKIT_CODEX_MODEL_ALIASES"),
+            setting="CLAWKIT_CODEX_MODEL_ALIASES",
+        )
+        if extended_commands
+        else {}
+    )
+    duplicate_aliases = sorted(
+        set(claude_model_aliases) & set(codex_model_aliases)
+    )
+    if duplicate_aliases:
+        raise ConfigurationError(
+            "Claude and Codex model aliases overlap: "
+            + ", ".join(duplicate_aliases)
+        )
     preferred = instance.preferred_agent
     if preferred == "auto":
         if authentication_status(paths, "claude").authenticated:
@@ -76,7 +126,36 @@ def build_bridge(paths: ClawKitPaths) -> TelegramBridge:
         audit=audit,
         preferred_agent=preferred,
         language=instance.language,
-        context_provider=lambda: _combined_context(paths, instance.timezone, modules),
+        context_provider=lambda: _combined_context(
+            paths,
+            instance.timezone,
+            modules,
+            features,
+        ),
+        extended_commands=extended_commands,
+        version_text=f"ClawKit {__version__}",
+        claude_model_aliases=claude_model_aliases,
+        codex_model_aliases=codex_model_aliases,
+        circuit_breaker_threshold=(
+            _bounded_int(
+                runtime.get("CLAWKIT_CIRCUIT_BREAKER_THRESHOLD"),
+                name="CLAWKIT_CIRCUIT_BREAKER_THRESHOLD",
+                default=3,
+                minimum=1,
+                maximum=20,
+            )
+            if features.enabled("circuit-breaker")
+            else 0
+        ),
+        circuit_breaker_cooldown_seconds=(
+            _positive_int(
+                runtime.get("CLAWKIT_CIRCUIT_BREAKER_COOLDOWN_SECONDS"),
+                name="CLAWKIT_CIRCUIT_BREAKER_COOLDOWN_SECONDS",
+                default=300,
+            )
+            if features.enabled("circuit-breaker")
+            else 300
+        ),
     )
     onboarding = OnboardingRouter(
         inner=router,
@@ -97,8 +176,38 @@ def build_bridge(paths: ClawKitPaths) -> TelegramBridge:
         enabled=runtime.get("CLAWKIT_UPDATE_CHECK", "1") != "0",
         language=instance.language,
     )
+    client = TelegramClient(runtime.require("TELEGRAM_BOT_TOKEN"))
+    attachment_processor = (
+        AttachmentProcessor(
+            client=client,
+            paths=paths,
+            transcribe_command=(
+                runtime.get("CLAWKIT_TRANSCRIBE_COMMAND")
+                if features.enabled("local-transcription")
+                else ""
+            ),
+            maximum_bytes=_bounded_int(
+                runtime.get("CLAWKIT_ATTACHMENT_MAX_BYTES"),
+                name="CLAWKIT_ATTACHMENT_MAX_BYTES",
+                default=8 * 1024 * 1024,
+                minimum=1024,
+                maximum=8 * 1024 * 1024,
+            ),
+        )
+        if features.enabled("attachments")
+        else None
+    )
+    visualization_renderer = (
+        VisualizationRenderer(
+            paths,
+            language=instance.language,
+            mermaid_render_command=runtime.get("CLAWKIT_MERMAID_RENDER_COMMAND"),
+        )
+        if features.enabled("inline-visualizations")
+        else None
+    )
     return TelegramBridge(
-        client=TelegramClient(runtime.require("TELEGRAM_BOT_TOKEN")),
+        client=client,
         router=onboarding,
         allowed_chat_id=chat_id,
         offset_store=OffsetStore(paths.telegram_offset_file),
@@ -119,6 +228,20 @@ def build_bridge(paths: ClawKitPaths) -> TelegramBridge:
             if key.startswith("update:")
             else modules.mark_notification_sent(key)
         ),
+        attachment_processor=attachment_processor,
+        visualization_renderer=visualization_renderer,
+        live_progress=features.enabled("live-progress"),
+        progress_interval_seconds=(
+            _bounded_int(
+                runtime.get("CLAWKIT_PROGRESS_INTERVAL_SECONDS"),
+                name="CLAWKIT_PROGRESS_INTERVAL_SECONDS",
+                default=45,
+                minimum=10,
+                maximum=300,
+            )
+            if features.enabled("live-progress")
+            else 45
+        ),
     )
 
 
@@ -126,8 +249,13 @@ def _combined_context(
     paths: ClawKitPaths,
     timezone: str,
     modules: ModuleManager,
+    features: FeatureSet,
 ) -> str:
-    base = build_instance_context(paths, timezone=timezone)
+    base = build_instance_context(
+        paths,
+        timezone=timezone,
+        extra_files=features.context_files(),
+    )
     extension = modules.context()
     if not extension:
         return base
