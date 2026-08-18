@@ -1,0 +1,4 @@
+interface:
+  display_name: "Training Analysis"
+  short_description: "Analyze local workouts and training trends"
+  default_prompt: "Use $training-analysis to review my recent local training summary."

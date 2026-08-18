@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python: ["3.10", "3.12"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Validate source and shell
+        run: |
+          python -m compileall -q src tests installer/privacy-scan.py
+          bash -n installer/install.sh installer/build-release.sh
+          git diff --check
+      - name: Privacy gate
+        run: python installer/privacy-scan.py
+      - name: Test
+        env:
+          PYTHONPATH: src
+        run: python -m unittest discover -s tests -v
+      - name: Build release artifacts
+        run: |
+          package_version="$(python -c 'import sys; sys.path.insert(0, "src"); import clawkit; print(clawkit.__version__)')"
+          bash installer/build-release.sh "${package_version}" dist
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
+        with:
+          name: clawkit-release-candidate
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,36 @@
+name: Feature request
+description: Propose a core, module, or instance improvement
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: User need
+      description: Explain the problem without personal data.
+    validations:
+      required: true
+  - type: dropdown
+    id: boundary
+    attributes:
+      label: Suggested boundary
+      options: [Core, Optional module, Personal instance, Unsure]
+    validations:
+      required: true
+  - type: textarea
+    id: flow
+    attributes:
+      label: Data flow and permissions
+      description: List data sources, destinations, storage, and approvals.
+    validations:
+      required: true
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Constraints
+      options:
+        - label: This does not require a pay-per-call API.
+          required: true
+        - label: This proposal contains no secrets or personal data.
+          required: true
+

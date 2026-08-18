@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "clawkit"
+version = "0.3.0"
+description = "Private-by-default building blocks for local personal assistants"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+clawkit = "clawkit.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+clawkit = [
+    "templates/*.tmpl",
+    "bundled_skills/*/SKILL.md",
+    "bundled_skills/*/agents/*.yaml",
+]

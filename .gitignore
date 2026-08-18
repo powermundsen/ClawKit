@@ -1,0 +1,43 @@
+# Secrets and local configuration
+.env
+.env.*
+*.pem
+*.key
+secrets/
+secrets.*
+
+# Personal instances and runtime
+ClawKitInstance/
+instances/
+runtime/
+instance/
+config/
+providers/
+tools/
+bin/
+releases/
+service/
+cache/
+current
+.clawkit-root
+state/
+attachments/
+logs/
+backups/
+
+# Python and test output
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build and editor output
+dist/
+build/
+.DS_Store
+.idea/
+.vscode/
+
+# Build metadata
+*.egg-info/
