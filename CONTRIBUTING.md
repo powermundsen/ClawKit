@@ -1,4 +1,4 @@
-# Bidrag til ClawKit
+# Bidrag til Mundsen
 
 Alle bidrag må bevare skillet mellom plattformkode, personlig instans og
 runtime.

@@ -7,7 +7,7 @@ import threading
 import time
 import unittest
 
-from clawkit.router.process import run_command
+from mundsen.router.process import run_command
 
 
 class TestControlledProcess(unittest.TestCase):

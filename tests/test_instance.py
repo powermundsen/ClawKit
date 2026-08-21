@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from clawkit.instance import (
+from mundsen.instance import (
     InstanceConfigurationError,
     InstanceSettings,
     load_instance,

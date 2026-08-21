@@ -5,12 +5,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from clawkit.bridge.job_store import (
+from mundsen.bridge.job_store import (
     JobStoreError,
     MessageJob,
     PersistentJobStore,
 )
-from clawkit.router.models import AgentResponse
+from mundsen.router.models import AgentResponse
 
 
 class TestPersistentJobStore(unittest.TestCase):

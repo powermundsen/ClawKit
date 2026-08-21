@@ -4,15 +4,15 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from clawkit.bridge.visualizations import VisualizationRenderer
-from clawkit.paths import ClawKitPaths
+from mundsen.bridge.visualizations import VisualizationRenderer
+from mundsen.paths import MundsenPaths
 
 
 class TestVisualizationRenderer(unittest.TestCase):
     def setUp(self) -> None:
         self.tempdir = tempfile.TemporaryDirectory()
         self.addCleanup(self.tempdir.cleanup)
-        self.paths = ClawKitPaths.from_root(Path(self.tempdir.name) / "ClawKit")
+        self.paths = MundsenPaths.from_root(Path(self.tempdir.name) / "Mundsen")
         self.renderer = VisualizationRenderer(self.paths, language="nb")
 
     def test_svg_and_mermaid_are_private_artifacts(self) -> None:

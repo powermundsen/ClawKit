@@ -33,7 +33,7 @@ class TestFreshInstallation(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(build.returncode, 0, build.stderr)
-            archive = dist / "clawkit-0.3.0.tar.gz"
+            archive = dist / "mundsen-0.3.0.tar.gz"
             manifest = json.loads(
                 (dist / "release-manifest.json").read_text(encoding="utf-8")
             )
@@ -42,9 +42,9 @@ class TestFreshInstallation(unittest.TestCase):
                 manifest["files"][0]["sha256"],
                 hashlib.sha256(archive.read_bytes()).hexdigest(),
             )
-            installer = dist / "ClawKit-0.3.0-installer.sh"
+            installer = dist / "Mundsen-0.3.0-installer.sh"
             expected_installer_hash = (
-                (dist / "ClawKit-0.3.0-installer.sh.sha256")
+                (dist / "Mundsen-0.3.0-installer.sh.sha256")
                 .read_text(encoding="utf-8")
                 .split()[0]
             )
@@ -65,7 +65,7 @@ class TestFreshInstallation(unittest.TestCase):
             self.assertEqual(checksums[installer.name], hashlib.sha256(installer.read_bytes()).hexdigest())
             with tarfile.open(archive, "r:gz") as bundle:
                 names = bundle.getnames()
-                self.assertIn("clawkit-0.3.0/LICENSE", names)
+                self.assertIn("mundsen-0.3.0/LICENSE", names)
             self.assertFalse(
                 any(
                     "__pycache__" in name
@@ -81,14 +81,14 @@ class TestFreshInstallation(unittest.TestCase):
             environment.pop("TELEGRAM_CHAT_ID", None)
             environment.update(
                 {
-                    "CLAWKIT_SKIP_PROVIDER_INSTALL": "1",
-                    "CLAWKIT_TEST_PYTHON": sys.executable,
+                    "MUNDSEN_SKIP_PROVIDER_INSTALL": "1",
+                    "MUNDSEN_TEST_PYTHON": sys.executable,
                 }
             )
             install = subprocess.run(
                 [
                     "bash",
-                    str(dist / "ClawKit-0.3.0-installer.sh"),
+                    str(dist / "Mundsen-0.3.0-installer.sh"),
                     str(root),
                     "--no-setup",
                 ],
@@ -104,10 +104,10 @@ class TestFreshInstallation(unittest.TestCase):
             self._write_fake_providers(root)
             installed_python = textwrap.dedent(
                 """
-                from clawkit.app import build_bridge
-                from clawkit.instance import InstanceSettings
-                from clawkit.paths import ClawKitPaths
-                from clawkit.setup import configure_telegram, create_instance
+                from mundsen.app import build_bridge
+                from mundsen.instance import InstanceSettings
+                from mundsen.paths import MundsenPaths
+                from mundsen.setup import configure_telegram, create_instance
 
                 class LocalTelegram:
                     def __init__(self):
@@ -120,7 +120,7 @@ class TestFreshInstallation(unittest.TestCase):
                         self.messages.append((chat_id, html_text))
                         return len(self.messages)
 
-                paths = ClawKitPaths.from_root(__import__("os").environ["CLAWKIT_HOME"])
+                paths = MundsenPaths.from_root(__import__("os").environ["MUNDSEN_HOME"])
                 create_instance(
                     paths,
                     InstanceSettings(
@@ -152,7 +152,7 @@ class TestFreshInstallation(unittest.TestCase):
             run_environment = dict(environment)
             run_environment.update(
                 {
-                    "CLAWKIT_HOME": str(root),
+                    "MUNDSEN_HOME": str(root),
                     "PYTHONPATH": str(root / "current" / "src"),
                     "PYTHONDONTWRITEBYTECODE": "1",
                 }
@@ -170,7 +170,7 @@ class TestFreshInstallation(unittest.TestCase):
             self.assertIn("<b>E2E OK</b>", routed.stdout)
 
             health = subprocess.run(
-                [str(root / "bin" / "clawkit"), "health", "--no-service"],
+                [str(root / "bin" / "mundsen"), "health", "--no-service"],
                 env=run_environment,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,

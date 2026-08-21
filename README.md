@@ -1,6 +1,6 @@
-# ClawKit
+# Mundsen
 
-ClawKit er et gjenbrukbart byggesett for personlige assistenter basert
+Mundsen er et gjenbrukbart byggesett for personlige assistenter basert
 på Claude Code og Codex CLI. Plattformen leverer den delte koden. Hver bruker
 eier sin egen persona, konfigurasjon, hukommelse, samtalehistorikk og
 hemmeligheter lokalt.
@@ -14,7 +14,7 @@ hemmeligheter lokalt.
 
 ## Mål
 
-En ClawKit-instans skal kunne:
+En Mundsen-instans skal kunne:
 
 - føre Telegram-dialog gjennom Claude Code og Codex CLI
 - velge agent, håndtere fallback og bevare sesjonskontinuitet
@@ -23,13 +23,13 @@ En ClawKit-instans skal kunne:
 - oppgraderes og rulles tilbake uten å overskrive personlige filer
 - bruke valgfrie moduler bare når brukeren har aktivert og konfigurert dem
 
-ClawKit skal ikke inneholde ekte brukeres data. Plattformen har ingen sentral
+Mundsen skal ikke inneholde ekte brukeres data. Plattformen har ingen sentral
 minnetjeneste, ingen telemetri og ingen avhengighet til API-er som faktureres
 per kall.
 
 ## Arkitektur
 
-ClawKit skiller strengt mellom tre lag:
+Mundsen skiller strengt mellom tre lag:
 
 1. **Kjerne:** versjonert bridge, routing, runtime og oppgraderingskode.
 2. **Personlig instans:** brukerens instruksjoner, profil, minne, påminnelser,
@@ -44,19 +44,19 @@ brukeren først har godkjent. Se [arkitekturen](docs/architecture.md).
 ## Første referanseplattform
 
 Første testede installasjonsvei blir native macOS på både eldre Intel-maskiner
-og Apple Silicon. ClawKit kjører bridge, filer og CLI-prosesser lokalt, mens
+og Apple Silicon. Mundsen kjører bridge, filer og CLI-prosesser lokalt, mens
 modellene brukes gjennom Claude Code- og Codex CLI-abonnementene. Det krever
 ikke Apple Silicon, lokal modell eller GPU.
 
 Installeren krever:
 
 - macOS eller Linux med `curl`, `tar` og minst 1,5 GiB ledig plass
-- tilgang til ClawKit-kilden eller en versjonert installasjonspakke
+- tilgang til Mundsen-kilden eller en versjonert installasjonspakke
 - Claude- og ChatGPT-abonnement for de agentene brukeren vil aktivere
 - LaunchAgent på macOS eller systemd-brukertjeneste på Linux
 - Telegram som eneste påkrevde chatmodul
 
-Python 3.12, Claude Code og Codex CLI installeres under valgt ClawKit-katalog.
+Python 3.12, Claude Code og Codex CLI installeres under valgt Mundsen-katalog.
 De offisielle CLI-installeringene kjøres med separat hjemmekatalog og et tomt,
 allowlistet miljø. Innlogging skjer interaktivt etterpå.
 
@@ -78,7 +78,7 @@ tjenestehåndtering og rollback er testet der.
 - innlasting av profil, åpne tråder, minne og påminnelser på hver agenttur
 - lokal påminnelsesmotor med separat varsling og forfallsvarsel
 - sanitert feilhåndtering og privat lokal audit
-- rotert lokal JSONL-audit, filtrert `clawkit logs` og en supportpakke som bare
+- rotert lokal JSONL-audit, filtrert `mundsen logs` og en supportpakke som bare
   inneholder sanitert driftsmetadata
 - selvutpakkende installer med administrert Python og isolerte CLI-er
 - LaunchAgent og systemd-brukertjeneste
@@ -115,20 +115,20 @@ private endepunkter, credentials eller leverandørspesifikk konfigurasjon.
 - Den ukentlige oppdateringssjekken henter bare GitHub release-metadata og det
   lille releasemanifestet. Den sender ingen lokal data tilbake.
 - Oppgradering krever eksplisitt godkjenning.
-- En privat installasjon bruker brukerens egen GitHub-identitet. Repoeierens
-  credential skal aldri kopieres til en brukers maskin.
+- Ved bruk av en privat fork skal brukeren autentisere med sin egen
+  GitHub-identitet. Repoeierens credential skal aldri kopieres til en brukers
+  maskin.
 
 Les [PRIVACY.md](PRIVACY.md) og [SECURITY.md](SECURITY.md) før installasjon
 eller bidrag.
 
 ## Installasjon og oppgradering
 
-Utviklingskandidaten kan startes med to kommandoer etter at brukeren har fått
-tilgang til repoet:
+Utviklingskandidaten kan hentes fra det offentlige, saniterte repoet:
 
 ```sh
-git clone <privat-clawkit-repo-url> "$HOME/ClawKit-source"
-bash "$HOME/ClawKit-source/installer/install.sh" "$HOME/ClawKit"
+git clone https://github.com/powermundsen/Mundsen.git "$HOME/Mundsen-source"
+bash "$HOME/Mundsen-source/installer/install.sh" "$HOME/Mundsen"
 ```
 
 Kildeklonen og den private runtimekatalogen må være forskjellige. Installeren
@@ -147,7 +147,7 @@ bakgrunnstjeneste. Se:
 Ikke bruk utviklingskandidaten som produksjonsinstallasjon før den isolerte
 ferskinstallasjonen i releaseporten er bestått.
 
-Ikke klon et privat personlig assistentrepo som erstatning for ClawKit. Det kan
+Ikke klon et privat personlig assistentrepo som erstatning for Mundsen. Det kan
 eksponere persondata og koble brukerens oppgraderinger til en annen persons
 runtime.
 

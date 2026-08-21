@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Conservative current-tree privacy and secret gate for ClawKit."""
+"""Conservative current-tree privacy and secret gate for Mundsen."""
 
 from __future__ import annotations
 

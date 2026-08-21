@@ -7,7 +7,7 @@ dele eller overskrive mennesket som bruker den.
 
 ## Lag og eierskap
 
-### 1. ClawKit-kjerne
+### 1. Mundsen-kjerne
 
 Kjernen er versjonert og read-only under normal drift:
 
@@ -30,7 +30,7 @@ Instansen opprettes én gang og eies av brukeren:
 - `memory/user_profile.md` og `memory/open-threads.md`
 - lokale modulvalg og private skills
 
-Maler brukes bare ved opprettelse. En senere ClawKit-release kan tilby en diff
+Maler brukes bare ved opprettelse. En senere Mundsen-release kan tilby en diff
 eller migrering, men skal ikke regenerere og overskrive filene.
 
 ### 3. Runtime og hemmeligheter
@@ -69,7 +69,7 @@ data, ikke Python-kode som kjernen muterer.
 ## Katalogmodell i den portable installasjonen
 
 ```text
-<valgt ClawKit-katalog>/
+<valgt Mundsen-katalog>/
 ├── releases/
 │   ├── 0.2.0/
 │   └── 0.3.0/
@@ -133,7 +133,7 @@ Runtimekonfigurasjon valideres før bridge starter.
 
 Private vedlegg, lokal transkribering, inline visualiseringer og redigert
 progressmelding ligger bak uavhengige feature-flagg. De inngår ikke i flyten
-eller dataområdet før de er eksplisitt aktivert i `CLAWKIT_FEATURES`.
+eller dataområdet før de er eksplisitt aktivert i `MUNDSEN_FEATURES`.
 
 ## Oppgraderingsgrense
 
@@ -152,7 +152,7 @@ må:
 ## Skills
 
 Kanoniske, delbare skills ligger i releasen. Private skills ligger i
-`instance/skills/`. Ved setup og servicestart validerer ClawKit navn og
+`instance/skills/`. Ved setup og servicestart validerer Mundsen navn og
 `SKILL.md`, avviser kollisjoner og lager bare egne administrerte symlinker til
 providerens dokumenterte discovery-stier. Urelaterte provider-skills røres
 ikke. En releaseoppgradering endrer ikke innhold i private skills.
@@ -162,7 +162,7 @@ ikke. En releaseoppgradering endrer ikke innhold i private skills.
 Telegram og agentrouting er del av minimumskjernen. Valgfrie moduler
 registreres gjennom et lite grensesnitt for eksplisitt konfigurasjon,
 planlagte lokale jobber, begrenset agentkontekst, varsler og health check.
-Moduler er av som standard og aktiveres i `CLAWKIT_MODULES`.
+Moduler er av som standard og aktiveres i `MUNDSEN_MODULES`.
 
 Første referansemodul er `local-health`. Den streamer utvalgte treningsevents
 fra en Apple Health XML-eksport til en privat SQLite-database, og genererer et
@@ -197,13 +197,13 @@ Bridge kjører som LaunchAgent hos en vanlig, upriviligert bruker. En egen lokal
 runtimebruker anbefales slik at assistenten ikke automatisk får tilgang til den
 vanlige brukerens filer.
 
-ClawKit kjører ikke modellen lokalt. Claude Code og Codex CLI bruker
+Mundsen kjører ikke modellen lokalt. Claude Code og Codex CLI bruker
 abonnementsautentisering, så CPU-generasjon og GPU er ikke arkitekturkrav.
 Installerens preflight skal i stedet verifisere at de konkrete CLI-versjonene
 fungerer på maskinen.
 
 Leverandørinstallasjonene får et tomt prosessmiljø med separate HOME-, XDG- og
-credentialkataloger. Dette hindrer at en ClawKit-installasjon finner og endrer
+credentialkataloger. Dette hindrer at en Mundsen-installasjon finner og endrer
 en annen npm- eller CLI-runtime gjennom den innloggede brukerens `PATH`.
 
 Lima/Linux-VM er en valgfri sterkere isolasjonsprofil, ikke

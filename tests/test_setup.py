@@ -6,9 +6,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from clawkit.instance import InstanceSettings, load_instance
-from clawkit.paths import ClawKitPaths
-from clawkit.setup import (
+from mundsen.instance import InstanceSettings, load_instance
+from mundsen.paths import MundsenPaths
+from mundsen.setup import (
     configure_telegram,
     create_instance,
     detect_private_chat_id,
@@ -32,7 +32,7 @@ class TestSetup(unittest.TestCase):
     def setUp(self) -> None:
         self.tempdir = tempfile.TemporaryDirectory()
         self.addCleanup(self.tempdir.cleanup)
-        self.paths = ClawKitPaths.from_root(Path(self.tempdir.name) / "ClawKit")
+        self.paths = MundsenPaths.from_root(Path(self.tempdir.name) / "Mundsen")
         self.settings = InstanceSettings(
             schema_version=1,
             assistant_name="Fjord",
@@ -55,7 +55,7 @@ class TestSetup(unittest.TestCase):
         self.assertEqual(load_instance(self.paths.instance_dir / "instance.yaml"), self.settings)
         self.assertTrue((self.paths.instance_dir / "AUTONOMY.md").is_file())
         runtime = self.paths.runtime_config_file.read_text(encoding="utf-8")
-        self.assertIn("CLAWKIT_FEATURES=", runtime)
+        self.assertIn("MUNDSEN_FEATURES=", runtime)
         self.assertEqual(
             stat.S_IMODE((self.paths.instance_dir / "AGENTS.md").stat().st_mode),
             0o600,

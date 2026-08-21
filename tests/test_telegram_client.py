@@ -7,7 +7,7 @@ import urllib.error
 from pathlib import Path
 from typing import Any
 
-from clawkit.bridge.telegram_client import TelegramClient, TelegramError
+from mundsen.bridge.telegram_client import TelegramClient, TelegramError
 
 TOKEN = "123456789:abcdefghijklmnopqrstuvwxyzABCDE"
 

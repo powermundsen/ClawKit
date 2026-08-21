@@ -8,20 +8,20 @@ import unittest
 import zipfile
 from pathlib import Path
 
-from clawkit.audit import AuditLogger
-from clawkit.diagnostics import (
+from mundsen.audit import AuditLogger
+from mundsen.diagnostics import (
     DiagnosticsError,
     create_support_bundle,
     read_audit_events,
 )
-from clawkit.paths import ClawKitPaths
+from mundsen.paths import MundsenPaths
 
 
 class TestDiagnostics(unittest.TestCase):
     def setUp(self) -> None:
         self.tempdir = tempfile.TemporaryDirectory()
         self.addCleanup(self.tempdir.cleanup)
-        self.paths = ClawKitPaths.from_root(Path(self.tempdir.name) / "ClawKit")
+        self.paths = MundsenPaths.from_root(Path(self.tempdir.name) / "Mundsen")
 
     def test_log_reader_filters_safe_metadata(self) -> None:
         logger = AuditLogger(self.paths.audit_log_file)

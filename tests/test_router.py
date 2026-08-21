@@ -5,10 +5,10 @@ import unittest
 from pathlib import Path
 from threading import Event, Thread
 
-from clawkit.audit import AuditLogger
-from clawkit.router.models import AgentResponse, RouterMode
-from clawkit.router.router import AgentRouter
-from clawkit.router.state import RouterStateStore
+from mundsen.audit import AuditLogger
+from mundsen.router.models import AgentResponse, RouterMode
+from mundsen.router.router import AgentRouter
+from mundsen.router.state import RouterStateStore
 
 
 class FakeAdapter:
@@ -253,7 +253,7 @@ class TestAgentRouter(unittest.TestCase):
             state_store=self.store,
             audit=self.audit,
             extended_commands=True,
-            version_text="ClawKit 0.4.0",
+            version_text="Mundsen 0.4.0",
             claude_model_aliases={"opus": "example-opus"},
         )
 

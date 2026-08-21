@@ -2,18 +2,18 @@
 
 set -euo pipefail
 
-CLAWKIT_BUNDLE_VERSION="0.3.0"
+MUNDSEN_BUNDLE_VERSION="0.3.0"
 
 usage() {
     printf '%s\n' \
-        "Usage: bash ClawKit-${CLAWKIT_BUNDLE_VERSION}-installer.sh [DIRECTORY]" \
+        "Usage: bash Mundsen-${MUNDSEN_BUNDLE_VERSION}-installer.sh [DIRECTORY]" \
         "       installer/install.sh [DIRECTORY] [--no-setup]" \
         "" \
-        "Installs ClawKit and its private runtime below one selected directory."
+        "Installs Mundsen and its private runtime below one selected directory."
 }
 
 fail() {
-    printf 'ClawKit installer: %s\n' "$1" >&2
+    printf 'Mundsen installer: %s\n' "$1" >&2
     exit 1
 }
 
@@ -42,7 +42,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 if [ -z "$selected_root" ]; then
-    default_root="$HOME/ClawKit"
+    default_root="$HOME/Mundsen"
     if [ -t 0 ]; then
         printf 'Installation directory [%s]: ' "$default_root"
         IFS= read -r selected_root
@@ -75,7 +75,7 @@ while [ "$git_probe" != "/" ]; do
     git_probe="$(dirname "$git_probe")"
 done
 
-root_marker="$selected_root/.clawkit-root"
+root_marker="$selected_root/.mundsen-root"
 if [ -L "$root_marker" ] || { [ -e "$root_marker" ] && [ ! -f "$root_marker" ]; }; then
     fail "installation root marker is unsafe"
 fi
@@ -83,7 +83,7 @@ if [ -f "$root_marker" ]; then
     marker_bytes="$(wc -c < "$root_marker" | tr -d '[:space:]')"
     marker_value="$(LC_ALL=C head -c 64 "$root_marker")"
     if [ "$marker_bytes" != "21" ] || \
-       [ "$marker_value" != "clawkit-runtime-root" ]; then
+       [ "$marker_value" != "mundsen-runtime-root" ]; then
         fail "installation root marker is invalid"
     fi
 else
@@ -93,13 +93,13 @@ else
     legacy_runtime=0
     if [ -L "$selected_root/current" ] && \
        [ -d "$selected_root/releases" ] && \
-       [ -x "$selected_root/bin/clawkit" ]; then
+       [ -x "$selected_root/bin/mundsen" ]; then
         legacy_runtime=1
     fi
     if [ -n "$existing_entry" ] && [ "$legacy_runtime" -ne 1 ]; then
-        fail "installation directory must be empty or an existing ClawKit runtime"
+        fail "installation directory must be empty or an existing Mundsen runtime"
     fi
-    printf 'clawkit-runtime-root\n' > "$root_marker"
+    printf 'mundsen-runtime-root\n' > "$root_marker"
 fi
 chmod 600 "$root_marker"
 chmod 700 "$selected_root"
@@ -124,17 +124,17 @@ case "$available_kib" in
         ;;
 esac
 
-temporary_dir="$(mktemp -d "${TMPDIR:-/tmp}/clawkit-install.XXXXXX")"
+temporary_dir="$(mktemp -d "${TMPDIR:-/tmp}/mundsen-install.XXXXXX")"
 cleanup() {
     rm -rf "$temporary_dir"
 }
 trap cleanup EXIT INT TERM
 
 script_path="${BASH_SOURCE[0]}"
-source_root="${CLAWKIT_SOURCE_DIR:-}"
+source_root="${MUNDSEN_SOURCE_DIR:-}"
 if [ -z "$source_root" ] && [ -f "$script_path" ]; then
     marker_line="$(
-        awk '/^__CLAWKIT_ARCHIVE_BELOW__$/ { print NR; exit }' "$script_path"
+        awk '/^__MUNDSEN_ARCHIVE_BELOW__$/ { print NR; exit }' "$script_path"
     )"
     if [ -n "$marker_line" ]; then
         payload_line=$((marker_line + 1))
@@ -142,14 +142,14 @@ if [ -z "$source_root" ] && [ -f "$script_path" ]; then
         if [ -s "$temporary_dir/payload.tar.gz" ] && \
            tar -tzf "$temporary_dir/payload.tar.gz" >/dev/null 2>&1; then
             tar -xzf "$temporary_dir/payload.tar.gz" -C "$temporary_dir"
-            source_root="$temporary_dir/clawkit-$CLAWKIT_BUNDLE_VERSION"
+            source_root="$temporary_dir/mundsen-$MUNDSEN_BUNDLE_VERSION"
         fi
     fi
 fi
 if [ -z "$source_root" ]; then
     source_root="$(cd "$(dirname "$script_path")/.." && pwd -P)"
 fi
-[ -f "$source_root/src/clawkit/__init__.py" ] || fail "release payload is missing"
+[ -f "$source_root/src/mundsen/__init__.py" ] || fail "release payload is missing"
 
 mkdir -p \
     "$selected_root/releases" \
@@ -173,8 +173,8 @@ chmod 700 \
     "$selected_root/cache/uv" \
     "$selected_root/bin"
 
-if [ -n "${CLAWKIT_TEST_PYTHON:-}" ]; then
-    ln -sfn "$CLAWKIT_TEST_PYTHON" "$selected_root/tools/bin/python3"
+if [ -n "${MUNDSEN_TEST_PYTHON:-}" ]; then
+    ln -sfn "$MUNDSEN_TEST_PYTHON" "$selected_root/tools/bin/python3"
 else
     if [ ! -x "$selected_root/tools/bin/uv" ]; then
         curl -LsSf https://astral.sh/uv/install.sh |
@@ -194,7 +194,7 @@ else
 fi
 [ -x "$selected_root/tools/bin/python3" ] || fail "managed Python installation failed"
 
-release_dir="$selected_root/releases/$CLAWKIT_BUNDLE_VERSION"
+release_dir="$selected_root/releases/$MUNDSEN_BUNDLE_VERSION"
 if [ -L "$release_dir" ]; then
     fail "release directory must not be a symlink"
 fi
@@ -231,7 +231,7 @@ if [ -d "$release_dir" ]; then
         -c '
 import sys
 from pathlib import Path
-from clawkit.release import RELEASE_METADATA_NAME, payload_matches_release
+from mundsen.release import RELEASE_METADATA_NAME, payload_matches_release
 
 payload = Path(sys.argv[1])
 release = Path(sys.argv[2])
@@ -257,28 +257,28 @@ if [ -e "$current_link" ] || [ -L "$current_link" ]; then
         cd "$current_link" 2>/dev/null && pwd -P
     )" || fail "current release link is broken"
     if [ "$current_target" != "$release_dir" ]; then
-        fail "a different ClawKit release is active; use clawkit upgrade"
+        fail "a different Mundsen release is active; use mundsen upgrade"
     fi
 fi
 ln -sfn "$release_dir" "$current_link"
 
-wrapper="$selected_root/bin/clawkit"
+wrapper="$selected_root/bin/mundsen"
 if [ -L "$wrapper" ]; then
     fail "command wrapper must not be a symlink"
 fi
-wrapper_stage="$temporary_dir/clawkit-wrapper"
+wrapper_stage="$temporary_dir/mundsen-wrapper"
 printf '%s\n' \
     '#!/usr/bin/env bash' \
     'set -euo pipefail' \
     'wrapper_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"' \
-    'clawkit_root="$(cd "$wrapper_dir/.." && pwd -P)"' \
-    'export CLAWKIT_HOME="$clawkit_root"' \
-    'export PYTHONPATH="$clawkit_root/current/src"' \
-    'export UV_PYTHON_INSTALL_DIR="$clawkit_root/tools/python"' \
-    'export UV_PYTHON_BIN_DIR="$clawkit_root/tools/bin"' \
-    'export UV_CACHE_DIR="$clawkit_root/cache/uv"' \
+    'mundsen_root="$(cd "$wrapper_dir/.." && pwd -P)"' \
+    'export MUNDSEN_HOME="$mundsen_root"' \
+    'export PYTHONPATH="$mundsen_root/current/src"' \
+    'export UV_PYTHON_INSTALL_DIR="$mundsen_root/tools/python"' \
+    'export UV_PYTHON_BIN_DIR="$mundsen_root/tools/bin"' \
+    'export UV_CACHE_DIR="$mundsen_root/cache/uv"' \
     'export PYTHONDONTWRITEBYTECODE=1' \
-    'exec "$clawkit_root/tools/bin/python3" -m clawkit "$@"' \
+    'exec "$mundsen_root/tools/bin/python3" -m mundsen "$@"' \
     > "$wrapper_stage"
 chmod 700 "$wrapper_stage"
 mv -f "$wrapper_stage" "$wrapper"
@@ -290,7 +290,7 @@ env \
     -c '
 import sys
 from pathlib import Path
-from clawkit.release import (
+from mundsen.release import (
     RELEASE_METADATA_NAME,
     record_installed_release,
     verify_installed_release,
@@ -307,10 +307,10 @@ else:
     verify_installed_release(release)
 ' \
     "$release_dir" \
-    "$CLAWKIT_BUNDLE_VERSION" \
+    "$MUNDSEN_BUNDLE_VERSION" \
     "$release_created"
 
-if [ "${CLAWKIT_SKIP_PROVIDER_INSTALL:-0}" != "1" ]; then
+if [ "${MUNDSEN_SKIP_PROVIDER_INSTALL:-0}" != "1" ]; then
     provider_home="$selected_root/providers/home"
     provider_path="/usr/bin:/bin:/usr/sbin:/sbin"
     provider_temp="$temporary_dir/providers"
@@ -363,8 +363,8 @@ if [ "${CLAWKIT_SKIP_PROVIDER_INSTALL:-0}" != "1" ]; then
     fi
 fi
 
-printf '\nClawKit %s is installed in %s\n' \
-    "$CLAWKIT_BUNDLE_VERSION" "$selected_root"
+printf '\nMundsen %s is installed in %s\n' \
+    "$MUNDSEN_BUNDLE_VERSION" "$selected_root"
 printf 'Local command: %s\n\n' "$wrapper"
 
 if [ "$run_setup" -eq 1 ]; then
@@ -372,4 +372,4 @@ if [ "$run_setup" -eq 1 ]; then
 fi
 exit 0
 
-__CLAWKIT_ARCHIVE_BELOW__
+__MUNDSEN_ARCHIVE_BELOW__

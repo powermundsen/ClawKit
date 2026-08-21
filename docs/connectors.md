@@ -1,28 +1,28 @@
 # Valgfrie lokale connectorer
 
 Kalender, morgenbrief, observability og smarthjem varierer mellom
-installasjoner. ClawKit inneholder derfor ingen private endepunkter, kontonavn,
+installasjoner. Mundsen inneholder derfor ingen private endepunkter, kontonavn,
 enhetsnavn eller credentials. I stedet ligger fire funksjonelle, men avskrudd
 connectorplasser klare i modulregisteret:
 
 | Modul | Lokal executable |
 |---|---|
-| `calendar` | `CLAWKIT_CALENDAR_COMMAND` |
-| `morning-brief` | `CLAWKIT_MORNING_BRIEF_COMMAND` |
-| `observability` | `CLAWKIT_OBSERVABILITY_COMMAND` |
-| `smart-home` | `CLAWKIT_SMART_HOME_COMMAND` |
+| `calendar` | `MUNDSEN_CALENDAR_COMMAND` |
+| `morning-brief` | `MUNDSEN_MORNING_BRIEF_COMMAND` |
+| `observability` | `MUNDSEN_OBSERVABILITY_COMMAND` |
+| `smart-home` | `MUNDSEN_SMART_HOME_COMMAND` |
 
 Aktivering er eksplisitt:
 
 ```dotenv
-CLAWKIT_MODULES=calendar,observability
-CLAWKIT_CALENDAR_COMMAND=/absolute/path/to/calendar-connector
-CLAWKIT_OBSERVABILITY_COMMAND=/absolute/path/to/observability-connector
+MUNDSEN_MODULES=calendar,observability
+MUNDSEN_CALENDAR_COMMAND=/absolute/path/to/calendar-connector
+MUNDSEN_OBSERVABILITY_COMMAND=/absolute/path/to/observability-connector
 ```
 
 Executable-en må være en absolutt, ikke-symlinket fil. Den startes uten shell
 og med et minimalt miljø som ikke inneholder Telegram-token, GitHub-token eller
-providercredentials. Den kjører fortsatt som den lokale ClawKit-brukeren og må
+providercredentials. Den kjører fortsatt som den lokale Mundsen-brukeren og må
 derfor være en betrodd lokal executable.
 
 ## Kommandokontrakt
@@ -47,10 +47,10 @@ connector ack module:key
 Varsling er av selv når modulen er aktiv. Det må slås på per connector:
 
 ```dotenv
-CLAWKIT_CALENDAR_NOTIFICATIONS=1
-CLAWKIT_MORNING_BRIEF_NOTIFICATIONS=1
-CLAWKIT_OBSERVABILITY_NOTIFICATIONS=1
-CLAWKIT_SMART_HOME_NOTIFICATIONS=1
+MUNDSEN_CALENDAR_NOTIFICATIONS=1
+MUNDSEN_MORNING_BRIEF_NOTIFICATIONS=1
+MUNDSEN_OBSERVABILITY_NOTIFICATIONS=1
+MUNDSEN_SMART_HOME_NOTIFICATIONS=1
 ```
 
 Connectorgrensen tilbyr bare kontekst, health og varsling. Den tilbyr ikke

@@ -8,10 +8,10 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
-from clawkit.config import ConfigurationError, RuntimeSettings
-from clawkit.instance import InstanceSettings
-from clawkit.module_system import ModuleManager, ModuleRegistry
-from clawkit.paths import ClawKitPaths
+from mundsen.config import ConfigurationError, RuntimeSettings
+from mundsen.instance import InstanceSettings
+from mundsen.module_system import ModuleManager, ModuleRegistry
+from mundsen.paths import MundsenPaths
 
 
 @dataclass
@@ -38,7 +38,7 @@ class TestModuleRegistry(unittest.TestCase):
     def setUp(self) -> None:
         self.tempdir = tempfile.TemporaryDirectory()
         self.addCleanup(self.tempdir.cleanup)
-        self.paths = ClawKitPaths.from_root(Path(self.tempdir.name) / "ClawKit")
+        self.paths = MundsenPaths.from_root(Path(self.tempdir.name) / "Mundsen")
         self.instance = InstanceSettings(
             1, "Fjord", "nb", "Europe/Oslo", "natural", "general", "auto"
         )
@@ -51,7 +51,7 @@ class TestModuleRegistry(unittest.TestCase):
         )
         manager = ModuleManager(
             self.paths,
-            RuntimeSettings({"CLAWKIT_MODULES": "example"}),
+            RuntimeSettings({"MUNDSEN_MODULES": "example"}),
             self.instance,
             registry=registry,
         )
@@ -63,7 +63,7 @@ class TestModuleRegistry(unittest.TestCase):
         with self.assertRaises(ConfigurationError):
             ModuleManager(
                 self.paths,
-                RuntimeSettings({"CLAWKIT_MODULES": "unknown"}),
+                RuntimeSettings({"MUNDSEN_MODULES": "unknown"}),
                 self.instance,
             )
 
@@ -82,9 +82,9 @@ class TestModuleRegistry(unittest.TestCase):
         os.chmod(command, 0o700)
         runtime = RuntimeSettings(
             {
-                "CLAWKIT_MODULES": "calendar",
-                "CLAWKIT_CALENDAR_COMMAND": str(command),
-                "CLAWKIT_CALENDAR_NOTIFICATIONS": "1",
+                "MUNDSEN_MODULES": "calendar",
+                "MUNDSEN_CALENDAR_COMMAND": str(command),
+                "MUNDSEN_CALENDAR_NOTIFICATIONS": "1",
             }
         )
         with patch.dict(os.environ, {"TELEGRAM_BOT_TOKEN": "must-not-leak"}):

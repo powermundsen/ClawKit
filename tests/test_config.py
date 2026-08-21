@@ -5,13 +5,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from clawkit.config import (
+from mundsen.config import (
     MAX_CONFIG_BYTES,
     ConfigurationError,
     load_runtime_settings,
     parse_env_file,
 )
-from clawkit.paths import ClawKitPaths, ensure_private_directories
+from mundsen.paths import MundsenPaths, ensure_private_directories
 
 
 class TestRuntimeConfiguration(unittest.TestCase):
@@ -20,7 +20,7 @@ class TestRuntimeConfiguration(unittest.TestCase):
         self.addCleanup(self.tempdir.cleanup)
         self.home = Path(self.tempdir.name) / "home"
         self.home.mkdir()
-        self.paths = ClawKitPaths.from_environ({"HOME": str(self.home)})
+        self.paths = MundsenPaths.from_environ({"HOME": str(self.home)})
         ensure_private_directories((self.paths.config_dir,))
 
     def write_runtime(self, text: str) -> None:
@@ -91,7 +91,7 @@ class TestRuntimeConfiguration(unittest.TestCase):
         self.write_secrets(
             "SERVICE_TOKEN=fake-secret-value\nTELEGRAM_CHAT_ID=100200300\n"
         )
-        marker_name = "CLAWKIT_TEST_MARKER"
+        marker_name = "MUNDSEN_TEST_MARKER"
         before = os.environ.get(marker_name)
         settings = load_runtime_settings(
             self.paths,

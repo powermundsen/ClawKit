@@ -6,7 +6,7 @@ Dette dokumentet kartlegger de vurderte kildefilene fra en eksisterende privat
 assistent uten å importere kildehistorikk eller persondata. Analysen bestemmer
 hva som kan gjenbrukes, hva som må skrives om og hva som skal utelates.
 
-Ingen hel kildefil eller kildehistorikk er kopiert til ClawKit. Den godkjente
+Ingen hel kildefil eller kildehistorikk er kopiert til Mundsen. Den godkjente
 elleve-filers grunnpakken er nå implementert som ny, sanitert kode etter
 kontraktene i dette dokumentet.
 
@@ -160,7 +160,7 @@ tilbake til en leverandørspesifikk settingsfil i hjemmekatalogen.
 
 **Må skrives om:**
 
-- ClawKit skal lese egne config- og secretsfiler
+- Mundsen skal lese egne config- og secretsfiler
 - stier skal injiseres og kunne peke til et midlertidig testmiljø
 - ingen agentleverandørs settingsfil skal brukes som generell secretskilde
 - validering skal returnere strukturerte feil, ikke mutere miljøet ved import
@@ -242,7 +242,7 @@ Følgende mønstre skal ikke videreføres:
 ## Målarkitektur for kode
 
 ```text
-src/clawkit/
+src/mundsen/
 ├── config.py
 ├── paths.py
 ├── audit.py
@@ -279,12 +279,12 @@ Ingen modul får utføre filskriving, nettverkskall eller prosessstart ved impor
 Commit `63e5747` etablerer bare disse trygge bladmodulene:
 
 1. `pyproject.toml`
-2. `src/clawkit/__init__.py`
-3. `src/clawkit/paths.py`
-4. `src/clawkit/config.py`
-5. `src/clawkit/audit.py`
-6. `src/clawkit/bridge/__init__.py`
-7. `src/clawkit/bridge/telegram_format.py`
+2. `src/mundsen/__init__.py`
+3. `src/mundsen/paths.py`
+4. `src/mundsen/config.py`
+5. `src/mundsen/audit.py`
+6. `src/mundsen/bridge/__init__.py`
+7. `src/mundsen/bridge/telegram_format.py`
 8. `tests/test_paths.py`
 9. `tests/test_config.py`
 10. `tests/test_audit.py`
@@ -323,7 +323,7 @@ Hvert trinn får egne tester og personvernport før neste trinn.
 ## Godkjenningsport
 
 Prosjekteieren godkjente 2026-07-28 både den avgrensede elleve-filers
-kodecommitten og kontrollert omskriving av den korte ClawKit-historikken.
+kodecommitten og kontrollert omskriving av den korte Mundsen-historikken.
 Begge handlingene er gjennomført og pushet.
 
 Godkjenningen omfattet bare de elleve kode- og testfilene over. Router,

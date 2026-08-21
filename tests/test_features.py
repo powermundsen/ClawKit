@@ -5,16 +5,16 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from clawkit.config import ConfigurationError, RuntimeSettings
-from clawkit.features import FeatureSet, parse_model_aliases
-from clawkit.paths import ClawKitPaths
+from mundsen.config import ConfigurationError, RuntimeSettings
+from mundsen.features import FeatureSet, parse_model_aliases
+from mundsen.paths import MundsenPaths
 
 
 class TestFeatures(unittest.TestCase):
     def setUp(self) -> None:
         self.tempdir = tempfile.TemporaryDirectory()
         self.addCleanup(self.tempdir.cleanup)
-        self.paths = ClawKitPaths.from_root(Path(self.tempdir.name) / "ClawKit")
+        self.paths = MundsenPaths.from_root(Path(self.tempdir.name) / "Mundsen")
 
     def test_features_are_disabled_by_default(self) -> None:
         features = FeatureSet(self.paths, RuntimeSettings({}))
@@ -26,7 +26,7 @@ class TestFeatures(unittest.TestCase):
         with self.assertRaises(ConfigurationError):
             FeatureSet(
                 self.paths,
-                RuntimeSettings({"CLAWKIT_FEATURES": "local-transcription"}),
+                RuntimeSettings({"MUNDSEN_FEATURES": "local-transcription"}),
             )
 
         command = Path(self.tempdir.name) / "transcribe"
@@ -36,8 +36,8 @@ class TestFeatures(unittest.TestCase):
             self.paths,
             RuntimeSettings(
                 {
-                    "CLAWKIT_FEATURES": "attachments,local-transcription",
-                    "CLAWKIT_TRANSCRIBE_COMMAND": str(command),
+                    "MUNDSEN_FEATURES": "attachments,local-transcription",
+                    "MUNDSEN_TRANSCRIBE_COMMAND": str(command),
                 }
             ),
         )
@@ -52,7 +52,7 @@ class TestFeatures(unittest.TestCase):
         )
         enabled = FeatureSet(
             self.paths,
-            RuntimeSettings({"CLAWKIT_FEATURES": "autonomy-context"}),
+            RuntimeSettings({"MUNDSEN_FEATURES": "autonomy-context"}),
         )
 
         self.assertEqual(disabled.context_files(), ())
@@ -62,7 +62,7 @@ class TestFeatures(unittest.TestCase):
         with self.assertRaises(ConfigurationError):
             FeatureSet(
                 self.paths,
-                RuntimeSettings({"CLAWKIT_FEATURES": "autonomy-context"}),
+                RuntimeSettings({"MUNDSEN_FEATURES": "autonomy-context"}),
             )
 
     def test_model_aliases_are_bounded_and_reserve_commands(self) -> None:
@@ -79,8 +79,8 @@ class TestFeatures(unittest.TestCase):
                 self.paths,
                 RuntimeSettings(
                     {
-                        "CLAWKIT_FEATURES": "inline-visualizations",
-                        "CLAWKIT_MERMAID_RENDER_COMMAND": str(
+                        "MUNDSEN_FEATURES": "inline-visualizations",
+                        "MUNDSEN_MERMAID_RENDER_COMMAND": str(
                             Path(self.tempdir.name) / "missing"
                         ),
                     }

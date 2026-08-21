@@ -7,13 +7,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from threading import Event
 
-from clawkit.audit import AuditLogger
-from clawkit.bridge.job_store import MessageJob, PersistentJobStore
-from clawkit.bridge.telegram_client import TelegramError
-from clawkit.bridge.runtime import OffsetStore, TelegramBridge
-from clawkit.bridge.visualizations import VisualizationRenderer
-from clawkit.paths import ClawKitPaths
-from clawkit.router.models import AgentResponse
+from mundsen.audit import AuditLogger
+from mundsen.bridge.job_store import MessageJob, PersistentJobStore
+from mundsen.bridge.telegram_client import TelegramError
+from mundsen.bridge.runtime import OffsetStore, TelegramBridge
+from mundsen.bridge.visualizations import VisualizationRenderer
+from mundsen.paths import MundsenPaths
+from mundsen.router.models import AgentResponse
 
 
 class FakeClient:
@@ -236,7 +236,7 @@ class TestTelegramRuntime(unittest.TestCase):
     def test_inline_visualization_is_sent_and_cleaned(self) -> None:
         root = Path(self.tempdir.name)
         renderer = VisualizationRenderer(
-            ClawKitPaths.from_root(root / "ClawKit"),
+            MundsenPaths.from_root(root / "Mundsen"),
             language="nb",
         )
         bridge = TelegramBridge(

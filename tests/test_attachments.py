@@ -5,8 +5,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from clawkit.bridge.attachments import AttachmentError, AttachmentProcessor
-from clawkit.paths import ClawKitPaths
+from mundsen.bridge.attachments import AttachmentError, AttachmentProcessor
+from mundsen.paths import MundsenPaths
 
 
 class FakeFileClient:
@@ -30,7 +30,7 @@ class TestAttachmentProcessor(unittest.TestCase):
     def setUp(self) -> None:
         self.tempdir = tempfile.TemporaryDirectory()
         self.addCleanup(self.tempdir.cleanup)
-        self.paths = ClawKitPaths.from_root(Path(self.tempdir.name) / "ClawKit")
+        self.paths = MundsenPaths.from_root(Path(self.tempdir.name) / "Mundsen")
         self.client = FakeFileClient()
 
     def test_document_is_private_and_referenced_without_original_name(self) -> None:

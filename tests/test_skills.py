@@ -5,15 +5,15 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from clawkit.paths import ClawKitPaths, ensure_private_directories
-from clawkit.skills import SkillError, skill_discovery_is_current, sync_skill_discovery
+from mundsen.paths import MundsenPaths, ensure_private_directories
+from mundsen.skills import SkillError, skill_discovery_is_current, sync_skill_discovery
 
 
 class TestSkillDiscovery(unittest.TestCase):
     def setUp(self) -> None:
         self.tempdir = tempfile.TemporaryDirectory()
         self.addCleanup(self.tempdir.cleanup)
-        self.paths = ClawKitPaths.from_root(Path(self.tempdir.name) / "ClawKit")
+        self.paths = MundsenPaths.from_root(Path(self.tempdir.name) / "Mundsen")
         ensure_private_directories(
             (
                 self.paths.home,
@@ -24,7 +24,7 @@ class TestSkillDiscovery(unittest.TestCase):
             )
         )
         release = self.paths.releases_dir / "0.3.0"
-        core = release / "src" / "clawkit" / "bundled_skills" / "core-check"
+        core = release / "src" / "mundsen" / "bundled_skills" / "core-check"
         core.mkdir(parents=True)
         (core / "SKILL.md").write_text("---\nname: core-check\ndescription: test\n---\n")
         local = self.paths.instance_dir / "skills" / "local-check"

@@ -7,7 +7,7 @@ secrets/
 secrets.*
 
 # Personal instances and runtime
-ClawKitInstance/
+MundsenInstance/
 instances/
 runtime/
 instance/
@@ -19,7 +19,7 @@ releases/
 service/
 cache/
 current
-.clawkit-root
+.mundsen-root
 state/
 attachments/
 logs/

@@ -7,8 +7,8 @@ import unittest
 from pathlib import Path
 from threading import Event
 
-from clawkit.instance import InstanceSettings
-from clawkit.onboarding import (
+from mundsen.instance import InstanceSettings
+from mundsen.onboarding import (
     COMPLETION_MARKER,
     OnboardingRouter,
     OnboardingState,
@@ -19,7 +19,7 @@ from clawkit.onboarding import (
     opening_prompt,
     strip_completion_marker,
 )
-from clawkit.router.models import AgentResponse
+from mundsen.router.models import AgentResponse
 
 
 def _settings() -> InstanceSettings:
