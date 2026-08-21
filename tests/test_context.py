@@ -7,15 +7,15 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from clawkit.context import ContextError, build_instance_context
-from clawkit.paths import ClawKitPaths
+from mundsen.context import ContextError, build_instance_context
+from mundsen.paths import MundsenPaths
 
 
 class TestInstanceContext(unittest.TestCase):
     def setUp(self) -> None:
         self.tempdir = tempfile.TemporaryDirectory()
         self.addCleanup(self.tempdir.cleanup)
-        self.paths = ClawKitPaths.from_root(Path(self.tempdir.name) / "ClawKit")
+        self.paths = MundsenPaths.from_root(Path(self.tempdir.name) / "Mundsen")
         (self.paths.instance_dir / "memory").mkdir(parents=True)
 
     def test_loads_profile_threads_reminders_and_today(self) -> None:

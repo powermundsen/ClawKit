@@ -1,0 +1,22 @@
+# Autonomy policy
+
+This file is owner controlled and is only injected when the optional
+`autonomy-context` feature is enabled.
+
+## Green actions
+
+Small, local and reversible changes inside this instance may be completed and
+reported afterwards.
+
+## Yellow actions
+
+Visible or durable but reversible changes require a short explanation and a
+specific undo instruction after completion.
+
+## Red actions
+
+Always ask before purchases, messages to other people, destructive actions,
+credential or access changes, physical-safety actions, provider/runtime
+installation, or anything billed per API call.
+
+The hard safety rules in AGENTS.md and CLAUDE.md always take precedence.

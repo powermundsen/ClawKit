@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible ClawKit problem
+description: Report a reproducible Mundsen problem
 title: "[Bug]: "
 labels: [bug]
 body:
@@ -9,7 +9,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: ClawKit version
+      label: Mundsen version
       placeholder: 0.3.0
     validations:
       required: true

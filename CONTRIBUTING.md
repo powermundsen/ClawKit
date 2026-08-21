@@ -1,7 +1,7 @@
-# Bidrag til ClawKit
+# Bidrag til Mundsen
 
-ClawKit er privat i første fase. Alle bidrag må bevare skillet mellom
-plattformkode, personlig instans og runtime.
+Alle bidrag må bevare skillet mellom plattformkode, personlig instans og
+runtime.
 
 ## Før du endrer kode
 

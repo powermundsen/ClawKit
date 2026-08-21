@@ -12,9 +12,9 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from clawkit import cli
-from clawkit.paths import ClawKitPaths
-from clawkit.updater import (
+from mundsen import cli
+from mundsen.paths import MundsenPaths
+from mundsen.updater import (
     GitHubRelease,
     UpdateError,
     download_release,
@@ -26,11 +26,11 @@ from clawkit.updater import (
 )
 
 
-def metadata(*, repository: str = "example/clawkit", version: str = "0.3.0") -> bytes:
+def metadata(*, repository: str = "example/mundsen", version: str = "0.3.0") -> bytes:
     return json.dumps(
         {
             "tag_name": f"v{version}",
-            "name": f"ClawKit {version}",
+            "name": f"Mundsen {version}",
             "body": "Changes",
             "html_url": f"https://github.com/{repository}/releases/tag/v{version}",
             "published_at": "2026-08-18T00:00:00Z",
@@ -42,7 +42,7 @@ def metadata(*, repository: str = "example/clawkit", version: str = "0.3.0") -> 
                     "url": f"https://api.github.com/repos/{repository}/releases/assets/1",
                 },
                 {
-                    "name": f"clawkit-{version}.tar.gz",
+                    "name": f"mundsen-{version}.tar.gz",
                     "url": f"https://api.github.com/repos/{repository}/releases/assets/2",
                 },
             ],
@@ -59,7 +59,7 @@ def manifest_payload(*, version: str = "0.3.0", archive: bytes = b"archive") -> 
             "maximum_instance_schema": 1,
             "files": [
                 {
-                    "path": f"clawkit-{version}.tar.gz",
+                    "path": f"mundsen-{version}.tar.gz",
                     "sha256": hashlib.sha256(archive).hexdigest(),
                 }
             ],
@@ -74,7 +74,7 @@ def manifest_payload(*, version: str = "0.3.0", archive: bytes = b"archive") -> 
 class TestUpdater(unittest.TestCase):
     def test_release_redirects_strip_credentials_and_reject_unknown_hosts(self) -> None:
         request = urllib.request.Request(
-            "https://api.github.com/repos/example/clawkit/releases/assets/1",
+            "https://api.github.com/repos/example/mundsen/releases/assets/1",
             headers={"Authorization": "Bearer synthetic"},
         )
         redirected = _SafeRedirectHandler().redirect_request(
@@ -99,14 +99,14 @@ class TestUpdater(unittest.TestCase):
 
     def test_weekly_update_notification_is_metadata_only_and_idempotent(self) -> None:
         release = fetch_latest_release(
-            "example/clawkit",
+            "example/mundsen",
             fetch_json=lambda url, token: metadata(),
         )
         with tempfile.TemporaryDirectory() as temp:
             state = Path(temp) / "state" / "updates.json"
             engine = UpdateNotificationEngine(
                 state_file=state,
-                repository="example/clawkit",
+                repository="example/mundsen",
                 current_version="0.2.0",
                 now=lambda: datetime(2026, 8, 18, tzinfo=timezone.utc),
                 fetch_release=lambda repository, token="": release,
@@ -126,7 +126,7 @@ class TestUpdater(unittest.TestCase):
 
             six_days_later = UpdateNotificationEngine(
                 state_file=state,
-                repository="example/clawkit",
+                repository="example/mundsen",
                 current_version="0.2.0",
                 now=lambda: datetime(2026, 8, 24, tzinfo=timezone.utc),
                 fetch_release=lambda repository, token="": release,
@@ -138,7 +138,7 @@ class TestUpdater(unittest.TestCase):
 
             next_week = UpdateNotificationEngine(
                 state_file=state,
-                repository="example/clawkit",
+                repository="example/mundsen",
                 current_version="0.2.0",
                 now=lambda: datetime(2026, 8, 25, tzinfo=timezone.utc),
                 fetch_release=lambda repository, token="": release,
@@ -154,18 +154,18 @@ class TestUpdater(unittest.TestCase):
 
     def test_latest_release_requires_exact_assets_and_trusted_urls(self) -> None:
         release = fetch_latest_release(
-            "example/clawkit",
+            "example/mundsen",
             fetch_json=lambda url, token: metadata(),
         )
 
         self.assertEqual(release.version, "0.3.0")
-        self.assertEqual(release.archive_name, "clawkit-0.3.0.tar.gz")
+        self.assertEqual(release.archive_name, "mundsen-0.3.0.tar.gz")
 
         unsafe = json.loads(metadata())
         unsafe["assets"][0]["url"] = "https://example.net/release-manifest.json"
         with self.assertRaisesRegex(UpdateError, "untrusted"):
             fetch_latest_release(
-                "example/clawkit",
+                "example/mundsen",
                 fetch_json=lambda url, token: json.dumps(unsafe).encode(),
             )
 
@@ -174,7 +174,7 @@ class TestUpdater(unittest.TestCase):
         missing["assets"] = missing["assets"][:1]
         with self.assertRaisesRegex(UpdateError, "missing"):
             fetch_latest_release(
-                "example/clawkit",
+                "example/mundsen",
                 fetch_json=lambda url, token: json.dumps(missing).encode(),
             )
 
@@ -182,7 +182,7 @@ class TestUpdater(unittest.TestCase):
         duplicate["assets"].append(duplicate["assets"][0])
         with self.assertRaisesRegex(UpdateError, "duplicate"):
             fetch_latest_release(
-                "example/clawkit",
+                "example/mundsen",
                 fetch_json=lambda url, token: json.dumps(duplicate).encode(),
             )
 
@@ -190,7 +190,7 @@ class TestUpdater(unittest.TestCase):
         prerelease["prerelease"] = True
         with self.assertRaisesRegex(UpdateError, "stable"):
             fetch_latest_release(
-                "example/clawkit",
+                "example/mundsen",
                 fetch_json=lambda url, token: json.dumps(prerelease).encode(),
             )
 
@@ -203,7 +203,7 @@ class TestUpdater(unittest.TestCase):
 
     def test_download_validates_manifest_against_release(self) -> None:
         release = fetch_latest_release(
-            "example/clawkit",
+            "example/mundsen",
             fetch_json=lambda url, token: metadata(),
         )
         archive = b"archive"
@@ -236,10 +236,10 @@ class TestUpdater(unittest.TestCase):
                     downloader=corrupt_downloader,
                 )
 
-    @patch("clawkit.cli.load_runtime_settings")
-    @patch("clawkit.cli.active_version", return_value="0.2.0")
-    @patch("clawkit.cli.fetch_latest_release")
-    @patch("clawkit.cli.fetch_release_manifest")
+    @patch("mundsen.cli.load_runtime_settings")
+    @patch("mundsen.cli.active_version", return_value="0.2.0")
+    @patch("mundsen.cli.fetch_latest_release")
+    @patch("mundsen.cli.fetch_release_manifest")
     def test_cli_check_does_not_download_or_install(
         self,
         fetch_manifest,
@@ -250,7 +250,7 @@ class TestUpdater(unittest.TestCase):
         del active
         load_runtime.return_value = SimpleNamespace(get=lambda name: "")
         fetch_latest.return_value = fetch_latest_release(
-            "example/clawkit",
+            "example/mundsen",
             fetch_json=lambda url, token: metadata(),
         )
         fetch_manifest.return_value = fetch_release_manifest(
@@ -260,13 +260,13 @@ class TestUpdater(unittest.TestCase):
             ),
         )
         with tempfile.TemporaryDirectory() as temp, patch(
-            "clawkit.cli.download_release"
-        ) as download, patch("clawkit.cli._cmd_upgrade") as upgrade:
+            "mundsen.cli.download_release"
+        ) as download, patch("mundsen.cli._cmd_upgrade") as upgrade:
             result = cli._cmd_update(
-                ClawKitPaths.from_root(Path(temp) / "ClawKit"),
+                MundsenPaths.from_root(Path(temp) / "Mundsen"),
                 Namespace(
                     action="check",
-                    repository="example/clawkit",
+                    repository="example/mundsen",
                     json=False,
                     yes=False,
                 ),
@@ -276,12 +276,12 @@ class TestUpdater(unittest.TestCase):
         download.assert_not_called()
         upgrade.assert_not_called()
 
-    @patch("clawkit.cli.load_runtime_settings")
-    @patch("clawkit.cli.active_version", return_value="0.2.0")
-    @patch("clawkit.cli.fetch_latest_release")
-    @patch("clawkit.cli.fetch_release_manifest")
-    @patch("clawkit.cli.download_release")
-    @patch("clawkit.cli._cmd_upgrade", return_value=0)
+    @patch("mundsen.cli.load_runtime_settings")
+    @patch("mundsen.cli.active_version", return_value="0.2.0")
+    @patch("mundsen.cli.fetch_latest_release")
+    @patch("mundsen.cli.fetch_release_manifest")
+    @patch("mundsen.cli.download_release")
+    @patch("mundsen.cli._cmd_upgrade", return_value=0)
     def test_cli_install_downloads_then_uses_guarded_upgrade(
         self,
         upgrade,
@@ -294,7 +294,7 @@ class TestUpdater(unittest.TestCase):
         del active
         load_runtime.return_value = SimpleNamespace(get=lambda name: "")
         fetch_latest.return_value = fetch_latest_release(
-            "example/clawkit",
+            "example/mundsen",
             fetch_json=lambda url, token: metadata(),
         )
         fetch_manifest.return_value = fetch_release_manifest(
@@ -304,14 +304,14 @@ class TestUpdater(unittest.TestCase):
             ),
         )
         with tempfile.TemporaryDirectory() as temp:
-            paths = ClawKitPaths.from_root(Path(temp) / "ClawKit")
+            paths = MundsenPaths.from_root(Path(temp) / "Mundsen")
             manifest = paths.cache_dir / "updates" / "0.3.0" / "release-manifest.json"
             download.return_value = manifest
             result = cli._cmd_update(
                 paths,
                 Namespace(
                     action="install",
-                    repository="example/clawkit",
+                    repository="example/mundsen",
                     json=False,
                     yes=True,
                 ),

@@ -10,7 +10,7 @@ import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 
-from clawkit.audit import AuditLogger
+from mundsen.audit import AuditLogger
 
 
 class TestAuditLogger(unittest.TestCase):

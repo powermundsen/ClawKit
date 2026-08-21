@@ -7,12 +7,12 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 
-from clawkit.config import ConfigurationError, RuntimeSettings
-from clawkit.cli import build_parser
-from clawkit.instance import InstanceSettings
-from clawkit.module_system import ModuleManager, parse_enabled_modules
-from clawkit.modules.local_health import LocalHealthError, LocalHealthModule
-from clawkit.paths import ClawKitPaths
+from mundsen.config import ConfigurationError, RuntimeSettings
+from mundsen.cli import build_parser
+from mundsen.instance import InstanceSettings
+from mundsen.module_system import ModuleManager, parse_enabled_modules
+from mundsen.modules.local_health import LocalHealthError, LocalHealthModule
+from mundsen.paths import MundsenPaths
 
 
 APPLE_HEALTH = """<?xml version="1.0" encoding="UTF-8"?>
@@ -34,7 +34,7 @@ class TestLocalHealth(unittest.TestCase):
         self.tempdir = tempfile.TemporaryDirectory()
         self.addCleanup(self.tempdir.cleanup)
         self.root = Path(self.tempdir.name)
-        self.paths = ClawKitPaths.from_root(self.root / "ClawKit")
+        self.paths = MundsenPaths.from_root(self.root / "Mundsen")
         self.module = LocalHealthModule(self.paths, settings())
         self.export = self.root / "export.xml"
         self.export.write_text(APPLE_HEALTH, encoding="utf-8")
@@ -92,13 +92,13 @@ class TestModuleManager(unittest.TestCase):
     def setUp(self) -> None:
         self.tempdir = tempfile.TemporaryDirectory()
         self.addCleanup(self.tempdir.cleanup)
-        self.paths = ClawKitPaths.from_root(Path(self.tempdir.name) / "ClawKit")
+        self.paths = MundsenPaths.from_root(Path(self.tempdir.name) / "Mundsen")
 
     def test_disabled_by_default_and_explicit_enable(self) -> None:
         disabled = ModuleManager(self.paths, RuntimeSettings({}), settings())
         enabled = ModuleManager(
             self.paths,
-            RuntimeSettings({"CLAWKIT_MODULES": "local-health"}),
+            RuntimeSettings({"MUNDSEN_MODULES": "local-health"}),
             settings(),
         )
         self.assertEqual(disabled.modules, [])
@@ -119,7 +119,7 @@ class TestModuleManager(unittest.TestCase):
         module.summary.unlink()
         manager = ModuleManager(
             self.paths,
-            RuntimeSettings({"CLAWKIT_MODULES": "local-health"}),
+            RuntimeSettings({"MUNDSEN_MODULES": "local-health"}),
             settings(),
             now=lambda: datetime(2026, 8, 17, tzinfo=timezone.utc),
         )

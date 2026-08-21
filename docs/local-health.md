@@ -6,14 +6,14 @@ betalbar API. Modulen er av som standard.
 ## Dataflyt
 
 1. Brukeren eksporterer Apple Health-data fra Helse-appen på iPhone.
-2. `export.zip` pakkes ut lokalt, og `export.xml` gis eksplisitt til ClawKit.
-3. ClawKit streamer utvalgte workouts og numeriske målinger til privat SQLite.
+2. `export.zip` pakkes ut lokalt, og `export.xml` gis eksplisitt til Mundsen.
+3. Mundsen streamer utvalgte workouts og numeriske målinger til privat SQLite.
 4. Modulen skriver `training-summary.md` og `training-summary.json` med modus
    `0600` under modulens private statekatalog.
 5. Bare Markdown-sammendraget legges i agentkonteksten. Rå XML, SQLite og
    import-ID sendes ikke til Claude eller OpenAI.
 
-Eksportfilen endres eller slettes aldri av ClawKit. Importen dedupliserer både
+Eksportfilen endres eller slettes aldri av Mundsen. Importen dedupliserer både
 hele eksportfiler og individuelle events.
 
 ## Aktivering
@@ -21,27 +21,27 @@ hele eksportfiler og individuelle events.
 Legg modulen inn i `config/runtime.env`:
 
 ```dotenv
-CLAWKIT_MODULES=local-health
+MUNDSEN_MODULES=local-health
 ```
 
 Restart deretter tjenesten og kontroller status:
 
 ```sh
-clawkit service restart
-clawkit training status
+mundsen service restart
+mundsen training status
 ```
 
 Aktivering er et eksplisitt samtykke til at det genererte sammendraget kan
 sendes til valgt agentleverandør når assistenten svarer. Deaktivering gjøres ved
-å fjerne `local-health` fra `CLAWKIT_MODULES` og restarte tjenesten. Lokale data
+å fjerne `local-health` fra `MUNDSEN_MODULES` og restarte tjenesten. Lokale data
 slettes ikke automatisk.
 
 ## Import og sammendrag
 
 ```sh
-clawkit training import /absolutt/sti/til/export.xml
-clawkit training summarize
-clawkit training status
+mundsen training import /absolutt/sti/til/export.xml
+mundsen training summarize
+mundsen training status
 ```
 
 Import krever en absolutt, vanlig fil. Symlinker, ugyldig XML, omvendte
@@ -52,13 +52,13 @@ distanse, puls, HRV, hvilepuls, steg, kroppsmasse og VO2 max.
 ## Agentanalyse
 
 Den medfølgende `training-analysis`-skillen bruker bare
-`<clawkit_module_context>`. Den skiller observasjon fra tolkning, sier fra om
+`<mundsen_module_context>`. Den skiller observasjon fra tolkning, sier fra om
 manglende data og behandler puls, HRV, hvilepuls, VO2 max og kroppsmasse som
 trender, ikke diagnoser.
 
 ## Backup og sletting
 
-Helsemodulens database og sammendrag inngår ikke i en ClawKit-release eller
+Helsemodulens database og sammendrag inngår ikke i en Mundsen-release eller
 supportpakke. Brukeren må selv velge eventuell kryptert lokal backup. Full
 sletting er en eksplisitt handling mot modulens private statekatalog og skjer
 aldri ved vanlig avinstallasjon eller deaktivering.

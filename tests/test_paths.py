@@ -6,14 +6,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from clawkit.paths import (
-    ClawKitPaths,
+from mundsen.paths import (
+    MundsenPaths,
     PathConfigurationError,
     ensure_private_directories,
 )
 
 
-class TestClawKitPaths(unittest.TestCase):
+class TestMundsenPaths(unittest.TestCase):
     def setUp(self) -> None:
         self.tempdir = tempfile.TemporaryDirectory()
         self.addCleanup(self.tempdir.cleanup)
@@ -21,35 +21,35 @@ class TestClawKitPaths(unittest.TestCase):
         self.home.mkdir()
 
     def test_defaults_are_portable_and_side_effect_free(self) -> None:
-        paths = ClawKitPaths.from_environ({"HOME": str(self.home)})
+        paths = MundsenPaths.from_environ({"HOME": str(self.home)})
 
-        self.assertEqual(paths.config_dir, self.home / ".config" / "clawkit")
+        self.assertEqual(paths.config_dir, self.home / ".config" / "mundsen")
         self.assertEqual(
-            paths.data_dir, self.home / ".local" / "share" / "clawkit"
+            paths.data_dir, self.home / ".local" / "share" / "mundsen"
         )
         self.assertEqual(
-            paths.state_dir, self.home / ".local" / "state" / "clawkit"
+            paths.state_dir, self.home / ".local" / "state" / "mundsen"
         )
-        self.assertEqual(paths.instance_dir, self.home / "ClawKitInstance")
+        self.assertEqual(paths.instance_dir, self.home / "MundsenInstance")
         self.assertFalse(paths.config_dir.exists())
         self.assertFalse(paths.state_dir.exists())
 
-    def test_xdg_and_clawkit_overrides_are_respected(self) -> None:
+    def test_xdg_and_mundsen_overrides_are_respected(self) -> None:
         config_root = self.home / "xdg-config"
         custom_instance = self.home / "instance"
-        paths = ClawKitPaths.from_environ(
+        paths = MundsenPaths.from_environ(
             {
                 "HOME": str(self.home),
                 "XDG_CONFIG_HOME": str(config_root),
-                "CLAWKIT_INSTANCE_DIR": str(custom_instance),
+                "MUNDSEN_INSTANCE_DIR": str(custom_instance),
             }
         )
 
-        self.assertEqual(paths.config_dir, config_root / "clawkit")
+        self.assertEqual(paths.config_dir, config_root / "mundsen")
         self.assertEqual(paths.instance_dir, custom_instance)
 
     def test_portable_root_keeps_owned_paths_below_root(self) -> None:
-        paths = ClawKitPaths.from_root("/opt/example-assistant")
+        paths = MundsenPaths.from_root("/opt/example-assistant")
 
         self.assertEqual(paths.instance_dir, Path("/opt/example-assistant/instance"))
         self.assertEqual(
@@ -73,12 +73,12 @@ class TestClawKitPaths(unittest.TestCase):
 
     def test_relative_override_is_rejected(self) -> None:
         with self.assertRaises(PathConfigurationError):
-            ClawKitPaths.from_environ(
-                {"HOME": str(self.home), "CLAWKIT_STATE_DIR": "relative/state"}
+            MundsenPaths.from_environ(
+                {"HOME": str(self.home), "MUNDSEN_STATE_DIR": "relative/state"}
             )
 
     def test_explicit_bootstrap_creates_private_directories(self) -> None:
-        paths = ClawKitPaths.from_environ({"HOME": str(self.home)})
+        paths = MundsenPaths.from_environ({"HOME": str(self.home)})
         ensure_private_directories(paths.private_runtime_directories())
 
         for path in paths.private_runtime_directories():

@@ -17,8 +17,8 @@ class TestInstaller(unittest.TestCase):
             environment = dict(os.environ)
             environment.update(
                 {
-                    "CLAWKIT_SKIP_PROVIDER_INSTALL": "1",
-                    "CLAWKIT_TEST_PYTHON": sys.executable,
+                    "MUNDSEN_SKIP_PROVIDER_INSTALL": "1",
+                    "MUNDSEN_TEST_PYTHON": sys.executable,
                 }
             )
             result = subprocess.run(
@@ -39,12 +39,12 @@ class TestInstaller(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual((root / "current").resolve().name, "0.3.0")
             self.assertEqual(
-                (root / ".clawkit-root").read_text(encoding="utf-8"),
-                "clawkit-runtime-root\n",
+                (root / ".mundsen-root").read_text(encoding="utf-8"),
+                "mundsen-runtime-root\n",
             )
-            self.assertEqual((root / ".clawkit-root").stat().st_mode & 0o777, 0o600)
+            self.assertEqual((root / ".mundsen-root").stat().st_mode & 0o777, 0o600)
             version = subprocess.run(
-                [str(root / "bin" / "clawkit"), "version"],
+                [str(root / "bin" / "mundsen"), "version"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
@@ -126,9 +126,9 @@ class TestInstaller(unittest.TestCase):
             environment = dict(os.environ)
             environment.update(
                 {
-                    "CLAWKIT_SKIP_PROVIDER_INSTALL": "1",
-                    "CLAWKIT_TEST_PYTHON": sys.executable,
-                    "CLAWKIT_SOURCE_DIR": str(source),
+                    "MUNDSEN_SKIP_PROVIDER_INSTALL": "1",
+                    "MUNDSEN_TEST_PYTHON": sys.executable,
+                    "MUNDSEN_SOURCE_DIR": str(source),
                 }
             )
             command = [
@@ -187,8 +187,8 @@ class TestInstaller(unittest.TestCase):
         environment = dict(os.environ)
         environment.update(
             {
-                "CLAWKIT_SKIP_PROVIDER_INSTALL": "1",
-                "CLAWKIT_TEST_PYTHON": sys.executable,
+                "MUNDSEN_SKIP_PROVIDER_INSTALL": "1",
+                "MUNDSEN_TEST_PYTHON": sys.executable,
             }
         )
 
@@ -209,7 +209,7 @@ class TestInstaller(unittest.TestCase):
 
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("Git worktree", result.stderr)
-        self.assertFalse((repo / ".clawkit-root").exists())
+        self.assertFalse((repo / ".mundsen-root").exists())
 
     def test_installer_rejects_unmarked_nonempty_directory(self) -> None:
         repo = Path(__file__).resolve().parents[1]
@@ -221,8 +221,8 @@ class TestInstaller(unittest.TestCase):
             environment = dict(os.environ)
             environment.update(
                 {
-                    "CLAWKIT_SKIP_PROVIDER_INSTALL": "1",
-                    "CLAWKIT_TEST_PYTHON": sys.executable,
+                    "MUNDSEN_SKIP_PROVIDER_INSTALL": "1",
+                    "MUNDSEN_TEST_PYTHON": sys.executable,
                 }
             )
 
@@ -244,23 +244,23 @@ class TestInstaller(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("must be empty", result.stderr)
             self.assertEqual(original.read_text(encoding="utf-8"), "keep\n")
-            self.assertFalse((root / ".clawkit-root").exists())
+            self.assertFalse((root / ".mundsen-root").exists())
 
     def test_installer_rejects_forged_root_marker(self) -> None:
         repo = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp) / "ClawKit"
+            root = Path(temp) / "Mundsen"
             root.mkdir()
-            (root / ".clawkit-root").write_text(
-                "not-clawkit\n",
+            (root / ".mundsen-root").write_text(
+                "not-mundsen\n",
                 encoding="utf-8",
             )
             (root / "keep.txt").write_text("keep\n", encoding="utf-8")
             environment = dict(os.environ)
             environment.update(
                 {
-                    "CLAWKIT_SKIP_PROVIDER_INSTALL": "1",
-                    "CLAWKIT_TEST_PYTHON": sys.executable,
+                    "MUNDSEN_SKIP_PROVIDER_INSTALL": "1",
+                    "MUNDSEN_TEST_PYTHON": sys.executable,
                 }
             )
 
@@ -292,7 +292,7 @@ class TestInstaller(unittest.TestCase):
             "providers/home/.claude/.credentials.json",
             "providers/codex/auth.json",
             "current",
-            "releases/0.3.0/src/clawkit/app.py",
+            "releases/0.3.0/src/mundsen/app.py",
         ):
             result = subprocess.run(
                 ["git", "check-ignore", "--no-index", relative],
@@ -308,18 +308,18 @@ class TestInstaller(unittest.TestCase):
     def test_installer_rejects_unsafe_current_path(self) -> None:
         repo = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp) / "ClawKit"
+            root = Path(temp) / "Mundsen"
             root.mkdir()
-            (root / ".clawkit-root").write_text(
-                "clawkit-runtime-root\n", encoding="utf-8"
+            (root / ".mundsen-root").write_text(
+                "mundsen-runtime-root\n", encoding="utf-8"
             )
             (root / "current").mkdir()
             environment = dict(os.environ)
             environment.update(
                 {
-                    "CLAWKIT_SOURCE_DIR": str(repo),
-                    "CLAWKIT_SKIP_PROVIDER_INSTALL": "1",
-                    "CLAWKIT_TEST_PYTHON": sys.executable,
+                    "MUNDSEN_SOURCE_DIR": str(repo),
+                    "MUNDSEN_SKIP_PROVIDER_INSTALL": "1",
+                    "MUNDSEN_TEST_PYTHON": sys.executable,
                 }
             )
 
@@ -347,7 +347,7 @@ class TestInstaller(unittest.TestCase):
         repo = Path(__file__).resolve().parents[1]
         with tempfile.TemporaryDirectory() as temp:
             work = Path(temp)
-            root = work / "ClawKit"
+            root = work / "Mundsen"
             fake_bin = work / "fake-bin"
             fake_bin.mkdir()
             live_claude = fake_bin / "claude"
@@ -390,7 +390,7 @@ class TestInstaller(unittest.TestCase):
             environment.update(
                 {
                     "PATH": f"{fake_bin}{os.pathsep}{environment['PATH']}",
-                    "CLAWKIT_TEST_PYTHON": sys.executable,
+                    "MUNDSEN_TEST_PYTHON": sys.executable,
                     "NVM_DIR": "/live/npm",
                     "ANTHROPIC_API_KEY": "must-not-leak",
                     "OPENAI_API_KEY": "must-not-leak",

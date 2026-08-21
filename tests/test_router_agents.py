@@ -6,13 +6,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from clawkit.paths import ClawKitPaths
-from clawkit.router.agents import (
+from mundsen.paths import MundsenPaths
+from mundsen.router.agents import (
     ClaudeAdapter,
     CodexAdapter,
     provider_environment,
 )
-from clawkit.router.process import CommandResult
+from mundsen.router.process import CommandResult
 
 
 class FakeRunner:
@@ -29,7 +29,7 @@ class TestAgentAdapters(unittest.TestCase):
     def setUp(self) -> None:
         self.tempdir = tempfile.TemporaryDirectory()
         self.addCleanup(self.tempdir.cleanup)
-        self.paths = ClawKitPaths.from_root(Path(self.tempdir.name) / "ClawKit")
+        self.paths = MundsenPaths.from_root(Path(self.tempdir.name) / "Mundsen")
         self.paths.instance_dir.mkdir(parents=True)
 
     def test_provider_environment_removes_api_billing_variables(self) -> None:

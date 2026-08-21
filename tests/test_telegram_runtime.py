@@ -7,17 +7,22 @@ from dataclasses import dataclass
 from pathlib import Path
 from threading import Event
 
-from clawkit.audit import AuditLogger
-from clawkit.bridge.job_store import MessageJob, PersistentJobStore
-from clawkit.bridge.telegram_client import TelegramError
-from clawkit.bridge.runtime import OffsetStore, TelegramBridge
-from clawkit.router.models import AgentResponse
+from mundsen.audit import AuditLogger
+from mundsen.bridge.job_store import MessageJob, PersistentJobStore
+from mundsen.bridge.telegram_client import TelegramError
+from mundsen.bridge.runtime import OffsetStore, TelegramBridge
+from mundsen.bridge.visualizations import VisualizationRenderer
+from mundsen.paths import MundsenPaths
+from mundsen.router.models import AgentResponse
 
 
 class FakeClient:
     def __init__(self) -> None:
         self.messages: list[tuple[int, str]] = []
         self.typing: list[int] = []
+        self.edits: list[tuple[int, int, str]] = []
+        self.deleted: list[tuple[int, int]] = []
+        self.documents: list[tuple[int, str]] = []
 
     def send_message(self, chat_id: int, html_text: str) -> int:
         self.messages.append((chat_id, html_text))
@@ -25,6 +30,16 @@ class FakeClient:
 
     def send_typing(self, chat_id: int) -> None:
         self.typing.append(chat_id)
+
+    def edit_message(self, chat_id: int, message_id: int, html_text: str) -> None:
+        self.edits.append((chat_id, message_id, html_text))
+
+    def delete_message(self, chat_id: int, message_id: int) -> None:
+        self.deleted.append((chat_id, message_id))
+
+    def send_document(self, chat_id: int, path: Path) -> int:
+        self.documents.append((chat_id, path.name))
+        return len(self.documents)
 
 
 class FakeRouter:
@@ -50,6 +65,21 @@ class BrokenRouter:
     ) -> AgentResponse:
         del message, cancel_event
         raise RuntimeError("secret internal detail")
+
+
+class VisualRouter:
+    def route(
+        self,
+        message: str,
+        *,
+        cancel_event: Event | None = None,
+    ) -> AgentResponse:
+        del message, cancel_event
+        return AgentResponse(
+            "```svg\n<svg><circle cx='1' cy='1' r='1'/></svg>\n```",
+            "claude",
+            True,
+        )
 
 class FailingSendClient(FakeClient):
     def send_message(self, chat_id: int, html_text: str) -> int:
@@ -181,6 +211,51 @@ class TestTelegramRuntime(unittest.TestCase):
         )
 
         self.assertIn("tekstmeldinger", self.client.messages[-1][1])
+
+    def test_live_progress_is_opt_in_and_removed_after_response(self) -> None:
+        root = Path(self.tempdir.name)
+        bridge = TelegramBridge(
+            client=self.client,  # type: ignore[arg-type]
+            router=self.router,
+            allowed_chat_id=1001,
+            offset_store=OffsetStore(root / "state" / "progress-offset.json"),
+            audit=self.bridge.audit,
+            live_progress=True,
+            progress_interval_seconds=10,
+        )
+        bridge.process_update(
+            {"update_id": 44, "message": {"chat": {"id": 1001}, "text": "Hei"}}
+        )
+
+        bridge.process_one_job()
+
+        self.assertIn("Tenker", self.client.messages[0][1])
+        self.assertEqual(self.client.deleted, [(1001, 1)])
+        self.assertIn("Svar", self.client.messages[-1][1])
+
+    def test_inline_visualization_is_sent_and_cleaned(self) -> None:
+        root = Path(self.tempdir.name)
+        renderer = VisualizationRenderer(
+            MundsenPaths.from_root(root / "Mundsen"),
+            language="nb",
+        )
+        bridge = TelegramBridge(
+            client=self.client,  # type: ignore[arg-type]
+            router=VisualRouter(),
+            allowed_chat_id=1001,
+            offset_store=OffsetStore(root / "state" / "visual-offset.json"),
+            audit=self.bridge.audit,
+            visualization_renderer=renderer,
+        )
+        bridge.process_update(
+            {"update_id": 45, "message": {"chat": {"id": 1001}, "text": "Vis"}}
+        )
+
+        bridge.process_one_job()
+
+        self.assertEqual(self.client.documents, [(1001, "visualization-1.svg")])
+        self.assertIn("se vedlegg", self.client.messages[-1][1])
+        self.assertFalse((renderer.paths.attachments_dir / "job-45").exists())
 
     def test_offset_store_is_private(self) -> None:
         store = self.bridge.offset_store

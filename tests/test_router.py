@@ -5,10 +5,10 @@ import unittest
 from pathlib import Path
 from threading import Event, Thread
 
-from clawkit.audit import AuditLogger
-from clawkit.router.models import AgentResponse, RouterMode
-from clawkit.router.router import AgentRouter
-from clawkit.router.state import RouterStateStore
+from mundsen.audit import AuditLogger
+from mundsen.router.models import AgentResponse, RouterMode
+from mundsen.router.router import AgentRouter
+from mundsen.router.state import RouterStateStore
 
 
 class FakeAdapter:
@@ -16,6 +16,14 @@ class FakeAdapter:
         self.name = name
         self.responses = responses
         self.calls: list[tuple[str, str, Event | None]] = []
+        self.model = ""
+        self.reasoning_effort = ""
+
+    def set_model(self, model: str) -> None:
+        self.model = model
+
+    def set_reasoning_effort(self, effort: str) -> None:
+        self.reasoning_effort = effort
 
     def call(
         self,
@@ -235,6 +243,77 @@ class TestAgentRouter(unittest.TestCase):
         for adapter in (claude, codex):
             self.assertIn("profile context", adapter.calls[0][0])
             self.assertIn("<owner_message>\nHei", adapter.calls[0][0])
+
+    def test_extended_commands_are_explicit_and_persist_model_choices(self) -> None:
+        claude = FakeAdapter("claude", [])
+        codex = FakeAdapter("codex", [])
+        router = AgentRouter(
+            claude=claude,
+            codex=codex,
+            state_store=self.store,
+            audit=self.audit,
+            extended_commands=True,
+            version_text="Mundsen 0.4.0",
+            claude_model_aliases={"opus": "example-opus"},
+        )
+
+        self.assertIn("0.4.0", router.route("/version").text)
+        self.assertIn("opus", router.route("/opus").text.lower())
+        self.assertEqual(claude.model, "example-opus")
+        self.assertEqual(self.store.load().claude_model, "example-opus")
+        self.assertIn("ikke", router.route("/rollback 0.3.0").text.lower())
+
+    def test_reasoning_command_and_gpt_alias_select_codex(self) -> None:
+        router, _, codex = self.router([], [])
+        router.extended_commands = True
+
+        router.route("/gpt")
+        response = router.route("/think xhigh")
+
+        self.assertIn("xhigh", response.text)
+        self.assertEqual(codex.reasoning_effort, "xhigh")
+        self.assertEqual(self.store.load().mode, RouterMode.CODEX)
+
+    def test_similar_command_name_is_not_treated_as_rollback(self) -> None:
+        router, claude, _ = self.router(
+            [AgentResponse("provider response", "claude", True)],
+            [],
+        )
+        router.extended_commands = True
+
+        response = router.route("/rollback-now")
+
+        self.assertEqual(response.text, "provider response")
+        self.assertEqual(len(claude.calls), 1)
+
+    def test_circuit_breaker_skips_repeatedly_failing_primary(self) -> None:
+        now = [100.0]
+        claude = FakeAdapter(
+            "claude",
+            [
+                AgentResponse("", "claude", False, error_category="capacity"),
+                AgentResponse("Recovered", "claude", True),
+            ],
+        )
+        codex = FakeAdapter(
+            "codex",
+            [AgentResponse("First", "codex", True), AgentResponse("Second", "codex", True)],
+        )
+        router = AgentRouter(
+            claude=claude,
+            codex=codex,
+            state_store=self.store,
+            audit=self.audit,
+            circuit_breaker_threshold=1,
+            circuit_breaker_cooldown_seconds=30,
+            monotonic=lambda: now[0],
+        )
+
+        self.assertEqual(router.route("one").agent, "codex")
+        self.assertEqual(router.route("two").agent, "codex")
+        self.assertEqual(len(claude.calls), 1)
+        now[0] = 131.0
+        self.assertEqual(router.route("three").agent, "claude")
 
 
 if __name__ == "__main__":

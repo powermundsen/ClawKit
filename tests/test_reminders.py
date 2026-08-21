@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from clawkit.reminders import ReminderEngine, ReminderError, parse_reminders
+from mundsen.reminders import ReminderEngine, ReminderError, parse_reminders
 
 
 class TestReminderEngine(unittest.TestCase):

@@ -9,8 +9,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from clawkit.paths import ClawKitPaths
-from clawkit.release import (
+from mundsen.paths import MundsenPaths
+from mundsen.release import (
     ReleaseError,
     active_version,
     install_release,
@@ -24,17 +24,17 @@ class TestReleaseManagement(unittest.TestCase):
         self.tempdir = tempfile.TemporaryDirectory()
         self.addCleanup(self.tempdir.cleanup)
         root = Path(self.tempdir.name)
-        self.paths = ClawKitPaths.from_root(root / "ClawKit")
+        self.paths = MundsenPaths.from_root(root / "Mundsen")
         self.artifacts = root / "artifacts"
         self.artifacts.mkdir()
 
     def make_release(self, version: str) -> Path:
-        archive_name = f"clawkit-{version}.tar.gz"
+        archive_name = f"mundsen-{version}.tar.gz"
         archive = self.artifacts / archive_name
         content = f'__version__ = "{version}"\n'.encode()
         with tarfile.open(archive, "w:gz") as bundle:
             member = tarfile.TarInfo(
-                f"clawkit-{version}/src/clawkit/__init__.py"
+                f"mundsen-{version}/src/mundsen/__init__.py"
             )
             member.size = len(content)
             member.mode = 0o644
@@ -81,7 +81,7 @@ class TestReleaseManagement(unittest.TestCase):
         with self.assertRaises(ReleaseError):
             install_release(self.paths, manifest_link)
 
-        archive = self.artifacts / "clawkit-0.1.0.tar.gz"
+        archive = self.artifacts / "mundsen-0.1.0.tar.gz"
         archive_target = self.artifacts / "archive-target.tar.gz"
         archive.rename(archive_target)
         archive.symlink_to(archive_target)
@@ -89,7 +89,7 @@ class TestReleaseManagement(unittest.TestCase):
             install_release(self.paths, manifest)
 
     def test_archive_traversal_is_rejected(self) -> None:
-        archive = self.artifacts / "clawkit-0.1.0.tar.gz"
+        archive = self.artifacts / "mundsen-0.1.0.tar.gz"
         with tarfile.open(archive, "w:gz") as bundle:
             member = tarfile.TarInfo("../outside")
             member.size = 1
@@ -120,10 +120,10 @@ class TestReleaseManagement(unittest.TestCase):
             install_release(self.paths, manifest)
 
     def test_oversized_archive_member_is_rejected(self) -> None:
-        archive = self.artifacts / "clawkit-0.1.0.tar.gz"
+        archive = self.artifacts / "mundsen-0.1.0.tar.gz"
         with tarfile.open(archive, "w:gz") as bundle:
             member = tarfile.TarInfo(
-                "clawkit-0.1.0/src/clawkit/__init__.py"
+                "mundsen-0.1.0/src/mundsen/__init__.py"
             )
             member.size = 2
             bundle.addfile(member, io.BytesIO(b"xx"))
@@ -149,7 +149,7 @@ class TestReleaseManagement(unittest.TestCase):
             encoding="utf-8",
         )
 
-        with patch("clawkit.release.MAX_ARCHIVE_FILE_BYTES", 1):
+        with patch("mundsen.release.MAX_ARCHIVE_FILE_BYTES", 1):
             with self.assertRaises(ReleaseError):
                 install_release(self.paths, manifest)
 
@@ -165,7 +165,7 @@ class TestReleaseManagement(unittest.TestCase):
     def test_installed_release_integrity_detects_file_changes(self) -> None:
         install_release(self.paths, self.make_release("0.1.0"))
         release = self.paths.releases_dir / "0.1.0"
-        source = release / "src" / "clawkit" / "__init__.py"
+        source = release / "src" / "mundsen" / "__init__.py"
         source.write_text('__version__ = "tampered"\n', encoding="utf-8")
 
         with self.assertRaisesRegex(ReleaseError, "integrity"):
@@ -185,7 +185,7 @@ class TestReleaseManagement(unittest.TestCase):
         install_release(self.paths, self.make_release("0.1.0"))
         install_release(self.paths, self.make_release("0.2.0"))
         metadata = (
-            self.paths.releases_dir / "0.1.0" / ".clawkit-release.json"
+            self.paths.releases_dir / "0.1.0" / ".mundsen-release.json"
         )
         data = json.loads(metadata.read_text(encoding="utf-8"))
         data["minimum_instance_schema"] = 2

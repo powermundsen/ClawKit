@@ -7,17 +7,17 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import call, patch
 
-from clawkit import cli
-from clawkit.paths import ClawKitPaths
-from clawkit.release import ReleaseError
+from mundsen import cli
+from mundsen.paths import MundsenPaths
+from mundsen.release import ReleaseError
 
 
 class TestReleaseCommands(unittest.TestCase):
     def setUp(self) -> None:
         self.tempdir = tempfile.TemporaryDirectory()
         self.addCleanup(self.tempdir.cleanup)
-        self.paths = ClawKitPaths.from_root(
-            Path(self.tempdir.name) / "ClawKit"
+        self.paths = MundsenPaths.from_root(
+            Path(self.tempdir.name) / "Mundsen"
         )
         self.manifest = SimpleNamespace(
             version="0.3.0",
@@ -26,13 +26,13 @@ class TestReleaseCommands(unittest.TestCase):
             migrations=(),
         )
 
-    @patch("clawkit.cli.create_upgrade_backup")
-    @patch("clawkit.cli.protected_snapshot", side_effect=[{"a": "1"}, {"a": "1"}])
-    @patch("clawkit.cli.install_release", return_value="0.3.0")
-    @patch("clawkit.cli._require_healthy")
-    @patch("clawkit.cli._service_is_installed", return_value=False)
-    @patch("clawkit.cli.active_version", return_value="0.2.0")
-    @patch("clawkit.cli.load_manifest")
+    @patch("mundsen.cli.create_upgrade_backup")
+    @patch("mundsen.cli.protected_snapshot", side_effect=[{"a": "1"}, {"a": "1"}])
+    @patch("mundsen.cli.install_release", return_value="0.3.0")
+    @patch("mundsen.cli._require_healthy")
+    @patch("mundsen.cli._service_is_installed", return_value=False)
+    @patch("mundsen.cli.active_version", return_value="0.2.0")
+    @patch("mundsen.cli.load_manifest")
     def test_upgrade_checks_health_before_and_after_activation(
         self,
         load_manifest,
@@ -62,17 +62,17 @@ class TestReleaseCommands(unittest.TestCase):
         )
         create_upgrade_backup.assert_called_once()
 
-    @patch("clawkit.cli.create_upgrade_backup")
-    @patch("clawkit.cli.protected_snapshot", return_value={"a": "1"})
-    @patch("clawkit.cli.install_release", return_value="0.3.0")
-    @patch("clawkit.cli.activate_release")
+    @patch("mundsen.cli.create_upgrade_backup")
+    @patch("mundsen.cli.protected_snapshot", return_value={"a": "1"})
+    @patch("mundsen.cli.install_release", return_value="0.3.0")
+    @patch("mundsen.cli.activate_release")
     @patch(
-        "clawkit.cli._require_healthy",
+        "mundsen.cli._require_healthy",
         side_effect=[None, ReleaseError("unhealthy"), None],
     )
-    @patch("clawkit.cli._service_is_installed", return_value=False)
-    @patch("clawkit.cli.active_version", return_value="0.2.0")
-    @patch("clawkit.cli.load_manifest")
+    @patch("mundsen.cli._service_is_installed", return_value=False)
+    @patch("mundsen.cli.active_version", return_value="0.2.0")
+    @patch("mundsen.cli.load_manifest")
     def test_failed_upgrade_restores_verified_previous_release(
         self,
         load_manifest,
@@ -102,12 +102,12 @@ class TestReleaseCommands(unittest.TestCase):
         activate_release.assert_called_once_with(self.paths, "0.2.0")
         self.assertEqual(require_healthy.call_count, 3)
 
-    @patch("clawkit.cli.create_upgrade_backup")
-    @patch("clawkit.cli.protected_snapshot", side_effect=[{"a": "1"}, {"a": "1"}])
-    @patch("clawkit.cli.rollback_release", return_value="0.1.0")
-    @patch("clawkit.cli._require_healthy")
-    @patch("clawkit.cli._service_is_installed", return_value=False)
-    @patch("clawkit.cli.active_version", return_value="0.2.0")
+    @patch("mundsen.cli.create_upgrade_backup")
+    @patch("mundsen.cli.protected_snapshot", side_effect=[{"a": "1"}, {"a": "1"}])
+    @patch("mundsen.cli.rollback_release", return_value="0.1.0")
+    @patch("mundsen.cli._require_healthy")
+    @patch("mundsen.cli._service_is_installed", return_value=False)
+    @patch("mundsen.cli.active_version", return_value="0.2.0")
     def test_rollback_checks_health_before_and_after_activation(
         self,
         active_version,
